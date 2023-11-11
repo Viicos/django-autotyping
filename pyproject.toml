@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-autotyping"
+description = "Django typing helper"
+authors = [
+    {name = "Viicos", email = "65306057+Viicos@users.noreply.github.com"}
+]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed"
+]
+dependencies = [
+    "libcst>=0.4.10",
+    "django",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/Viicos/django-autotyping"
+Source = "https://github.com/Viicos/django-autotyping"
+Changelog = "https://github.com/Viicos/django-autotyping/blob/main/CHANGELOG.md"
+
+[tool.setuptools.dynamic]
+version = {attr = "django_autotyping.__version__"}
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"django_autotyping" = ["py.typed"]
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+select = [
+    "E",  # pycodestyle (E)
+    "W",  # pycodestyle (W)
+    "F",  # Pyflakes
+    "UP", # pyupgrade
+    "I",  # isort
+    "PL", # Pylint
+]
+line-length = 120
+src = ["src"]
+
+[tool.ruff.isort]
+known-first-party = ["django_autotyping"]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
