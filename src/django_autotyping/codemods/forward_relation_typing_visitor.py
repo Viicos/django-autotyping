@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import libcst as cst
 import libcst.matchers as m
+from django.db.models.fields.related import RECURSIVE_RELATIONSHIP_CONSTANT
 from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
-from libcst.metadata import FullyQualifiedNameProvider, ScopeProvider
+from libcst.codemod.visitors import AddImportsVisitor
+from libcst.metadata import ScopeProvider
 from libcst.metadata.scope_provider import ClassScope
 
 from ..models import ModelInfo
@@ -25,8 +27,8 @@ ASSIGN_FOREIGN_FIELD = m.Assign(
 )
 
 
-class AnyToOneTypingVisitor(VisitorBasedCodemodCommand):
-    METADATA_DEPENDENCIES = {FullyQualifiedNameProvider, ScopeProvider}
+class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
+    METADATA_DEPENDENCIES = {ScopeProvider}
 
     def __init__(self, context: CodemodContext, model_infos: list[ModelInfo]) -> None:
         super().__init__(context)
@@ -48,25 +50,53 @@ class AnyToOneTypingVisitor(VisitorBasedCodemodCommand):
         if self.current_model is None:
             return updated_node
 
-        forward_relations = self.current_model.forward_relations
+        # TODO handle multiple targets? Unlikely in the context of a Django model
         target = updated_node.targets[0].target
-        if forward_relation := forward_relations.get(target.value):
-            extracted = m.extract(updated_node, ASSIGN_FOREIGN_FIELD)
-            string_reference: cst.SimpleString = extracted.get("string_reference")
-            if not string_reference:
-                return updated_node
+        forward_relation = self.current_model.forward_relations.get(target.value)
+        if forward_relation is None:
+            return updated_node
 
-            splitted = string_reference.raw_value.split(".")
-            if len(splitted) == 1:
-                # reference is in the same app
-                class_ref = splitted[0]
+        extracted = m.extract(updated_node, ASSIGN_FOREIGN_FIELD)
+        string_reference: cst.SimpleString = extracted.get("string_reference")
+        if not string_reference:
+            return updated_node
+
+        splitted = string_reference.raw_value.split(".")
+        if len(splitted) == 1:
+            # reference is in the same app
+            class_ref = splitted[0]
+        else:
+            # reference is from an outside app, e.g. myapp.MyModel
+            class_ref = splitted[1]
+        if class_ref == RECURSIVE_RELATIONSHIP_CONSTANT:
+            # Handle relationships with itself
+            class_ref = self.current_model.class_name
+
+        # TODO Run a transformer to move in an `if TYPE_CHECKING` block.
+        if self.current_model.module is not forward_relation.model_module:
+            # TODO check if model is from the same app: do relative import
+            if self.current_model.app_config is forward_relation.app_config:
+                pass
             else:
-                # reference is from an outside app, e.g. myapp.MyModel
-                class_ref = splitted[1]
+                AddImportsVisitor.add_needed_import(
+                    self.context,
+                    module=forward_relation.app_models_module.__name__,
+                    obj=class_ref,
+                )
 
-            # TODO Add import to model, in an `if TYPE_CHECKING` block.
-            # This will require some additional info: in particular the `AppConfig.models_module`
-
+        if forward_relation.has_init_subclass:
+            # We can parametrize the field directly, we won't get runtime TypeErrors
+            annotation_str = f'["{class_ref}"]'  # forward ref used here as it will be evaluated at runtime
+            if isinstance(updated_node.value.func, cst.Name):
+                # e.g. `field = ForeignKey(...)`
+                updated_node.value.func.value += annotation_str
+            else:
+                # e.g. `field = models.ForeignKey(...)`
+                updated_node.value.func.attr.value += annotation_str
+            return updated_node
+        else:
+            # We explicitly annotate to avoid runtime TypeErrors
+            # e.g. from `field = ForeignKey(...)` to `field: ForeignKey[...] = ForeignKey(...)`
             annotation_str = f"{_get_attribute_path(updated_node.value.func)}[{class_ref}]"
             return cst.AnnAssign(
                 target=target,

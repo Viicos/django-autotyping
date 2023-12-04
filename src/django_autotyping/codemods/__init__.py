@@ -1,3 +1,3 @@
-from .any_to_one_typing_visitor import AnyToOneTypingVisitor
+from .forward_relation_typing_visitor import ForwardRelationTypingVisitor
 
-__all__ = ("AnyToOneTypingVisitor",)
+__all__ = ("ForwardRelationTypingVisitor",)

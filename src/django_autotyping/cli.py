@@ -26,7 +26,7 @@ def _dir_path(path_str: str) -> Path:
 
 def parse_args() -> ScriptNamespace:
     parser = ArgumentParser(
-        "django-typing-helper",
+        "django-autotyping",
         "Add type hints to your models for better auto-completion.",
     )
 
@@ -57,4 +57,5 @@ def entrypoint() -> None:
     setup_django()
 
     model_infos = parse_models(args.path)
+    print(model_infos)
     main(model_infos)
