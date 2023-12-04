@@ -7,6 +7,7 @@ from pathlib import Path
 
 from django.conf import ENVIRONMENT_VARIABLE as DJANGO_SETTINGS_MODULE_ENV_KEY
 
+from .codemods import rules
 from .django_utils import parse_models, setup_django
 from .main import main
 
@@ -17,6 +18,8 @@ class ScriptNamespace(Namespace):
 
     settings_module: str | None
 
+    disable: list[str] | None
+
 
 def _dir_path(path_str: str) -> Path:
     if not (path := Path(path_str)).is_dir():
@@ -26,7 +29,7 @@ def _dir_path(path_str: str) -> Path:
 
 def parse_args() -> ScriptNamespace:
     parser = ArgumentParser(
-        "django-typing-helper",
+        "django-autotyping",
         "Add type hints to your models for better auto-completion.",
     )
 
@@ -40,6 +43,12 @@ def parse_args() -> ScriptNamespace:
         "--settings-module",
         default=os.getenv(DJANGO_SETTINGS_MODULE_ENV_KEY),
         help="Value of the `DJANGO_SETTINGS_MODULE` environment variable (a dotted Python path).",
+    )
+    parser.add_argument(
+        "--disable",
+        choices=[rule[0] for rule in rules],
+        nargs="*",
+        help="Rules to be disabled.",
     )
 
     return parser.parse_args(namespace=ScriptNamespace())
@@ -57,4 +66,5 @@ def entrypoint() -> None:
     setup_django()
 
     model_infos = parse_models(args.path)
+    print(model_infos)
     main(model_infos)

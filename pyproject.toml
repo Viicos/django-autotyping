@@ -59,6 +59,9 @@ select = [
 ]
 line-length = 120
 src = ["src"]
+ignore = [
+    "PLR0912"
+]
 
 [tool.ruff.isort]
 known-first-party = ["django_autotyping"]

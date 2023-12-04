@@ -24,4 +24,4 @@ def _discover_models(root_dir: Path) -> list[ModelType]:
 
 
 def parse_models(root_dir: Path) -> list[ModelInfo]:
-    return [ModelInfo.from_model(model) for model in _discover_models(root_dir)]
+    return [ModelInfo.from_model(model) for model in _discover_models(root_dir.resolve())]
