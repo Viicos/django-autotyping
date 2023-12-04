@@ -7,6 +7,7 @@ from pathlib import Path
 
 from django.conf import ENVIRONMENT_VARIABLE as DJANGO_SETTINGS_MODULE_ENV_KEY
 
+from .codemods import rules
 from .django_utils import parse_models, setup_django
 from .main import main
 
@@ -16,6 +17,8 @@ class ScriptNamespace(Namespace):
     """Path to the directory containing the Django application."""
 
     settings_module: str | None
+
+    disable: list[str] | None
 
 
 def _dir_path(path_str: str) -> Path:
@@ -40,6 +43,12 @@ def parse_args() -> ScriptNamespace:
         "--settings-module",
         default=os.getenv(DJANGO_SETTINGS_MODULE_ENV_KEY),
         help="Value of the `DJANGO_SETTINGS_MODULE` environment variable (a dotted Python path).",
+    )
+    parser.add_argument(
+        "--disable",
+        choices=[rule[0] for rule in rules],
+        nargs="*",
+        help="Rules to be disabled.",
     )
 
     return parser.parse_args(namespace=ScriptNamespace())
