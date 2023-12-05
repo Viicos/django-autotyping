@@ -51,7 +51,7 @@ def parse_args() -> ScriptNamespace:
         "--type-checking-block",
         action="store_true",
         default=False,
-        help="Whether newly added imports should be in an `if TYPE_CHECKING` block (avoids circular imports)."
+        help="Whether newly added imports should be in an `if TYPE_CHECKING` block (avoids circular imports).",
     )
 
     return parser.parse_args(namespace=ScriptNamespace())

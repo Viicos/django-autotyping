@@ -10,10 +10,66 @@ Automatically add type hints for Django powered applications.
 > [!WARNING]\
 > Still WIP
 
-<p align="center">
-  <img alt="https://carbon.now.sh/?bg=rgba%2874%2C144%2C226%2C1%29&t=material&wt=none&l=auto&width=617&ds=false&dsyoff=20px&dsblur=68px&wc=true&wa=false&pv=56px&ph=56px&ln=false&fl=1&fm=Fira+Code&fs=14px&lh=152%25&si=false&es=2x&wm=false&code=from%2520django.db%2520import%2520models%250Afrom%2520django.db.models%2520import%2520ForeignKey%252C%2520OneToOneField%250A%250A%2523%2520apps%252Freporters%252Fmodels.py%253A%250A%250Aclass%2520Reporter%28models.Model%29%253A%250A%2520%2520%2520%2520address%2520%253D%2520OneToOneField%28%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522OfficeRoom%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520on_delete%253Dmodels.CASCADE%252C%250A%2520%2520%2520%2520%29%250A%250A%250Aclass%2520OfficeRoom%28models.Model%29%253A%250A%2520%2520%2520%2520identifier%2520%253D%2520models.CharField%28max_length%253D3%29%250A%250A%250A%2523%2520apps%252Farticles%252Fmodels.py%253A%250A%250Aclass%2520Article%28models.Model%29%253A%250A%2520%2520%2520%2520reporter%2520%253D%2520ForeignKey%28%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522reporters.Reporter%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520on_delete%253Dmodels.CASCADE%252C%250A%2520%2520%2520%2520%29" src="./assets/before.png" title="Before" width="45%">
-&nbsp; &nbsp; &nbsp; &nbsp;
-  <img alt="https://carbon.now.sh/?bg=rgba%2874%2C144%2C226%2C1%29&t=material&wt=none&l=auto&width=755.75&ds=false&dsyoff=20px&dsblur=68px&wc=true&wa=false&pv=56px&ph=56px&ln=false&fl=1&fm=Fira+Code&fs=14px&lh=152%25&si=false&es=2x&wm=false&code=from%2520django.db%2520import%2520models%250Afrom%2520django.db.models%2520import%2520ForeignKey%252C%2520OneToOneField%250A%250A%2523%2520apps%252Freporters%252Fmodels.py%253A%250Aif%2520TYPE_CHECKING%253A%250A%2520%2520%2520%2520from%2520apps.articles.models%2520import%2520Article%250A%250Aclass%2520Reporter%28models.Model%29%253A%250A%2520%2520%2520%2520address%253A%2520%2522OneToOneField%255BOfficeRoom%255D%2522%2520%253D%2520OneToOneField%28%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522OfficeRoom%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520on_delete%253Dmodels.CASCADE%252C%250A%2520%2520%2520%2520%29%250A%2520%2520%2520%2520%250A%2520%2520%2520%2520article_set%253A%2520%2522models.Manager%255BArticle%255D%2522%250A%250A%250Aclass%2520OfficeRoom%28models.Model%29%253A%250A%2520%2520%2520%2520identifier%2520%253D%2520models.CharField%28max_length%253D3%29%250A%250A%2523%2520apps%252Farticles%252Fmodels.py%253A%250A%250Aif%2520TYPE_CHECKING%253A%250A%2520%2520%2520%2520from%2520apps.reporters.models%2520import%2520Reporter%250A%250Aclass%2520Article%28models.Model%29%253A%250A%2520%2520%2520%2520reporter%253A%2520%2522ForeignKey%255BReporter%255D%2522%2520%253D%2520ForeignKey%28%250A%2520%2520%2520%2520%2520%2520%2520%2520%2522reporters.Reporter%2522%252C%250A%2520%2520%2520%2520%2520%2520%2520%2520on_delete%253Dmodels.CASCADE%252C%250A%2520%2520%2520%2520%29" src="./assets/after.png" title="After" width="45%">
-</p>
+> [!NOTE]\
+> As of today, generated type hints will only play well with [`django-types`](https://github.com/sbdchd/django-types). [`django-stubs`](https://github.com/typeddjango/django-stubs) requires a type for both the `__set__` and `__get__` types.
+
+# Installation
+
+Through `pip`:
+
+```sh
+pip install django-autotyping
+```
+
+# Usage
+
+`django-autotyping` can be used as a CLI program:
+
+```sh
+usage: Add type hints to your models for better auto-completion.
+
+positional arguments:
+  path                  Path to the directory containing the Django application. This directory should contain your `manage.py` file.
+
+options:
+  -h, --help            show this help message and exit
+  --settings-module SETTINGS_MODULE
+                        Value of the `DJANGO_SETTINGS_MODULE` environment variable (a dotted Python path).
+  --disable [{DJA001} ...]
+                        Rules to be disabled.
+  --type-checking-block
+                        Whether newly added imports should be in an `if TYPE_CHECKING` block (avoids circular imports).
+```
+
+# Rules
+
+## Add type hints to forward relations (`DJA001`)
+
+All subclasses of [`RelatedField`](https://github.com/django/django/blob/0ee2b8c326d47387bacb713a3ab369fa9a7a22ee/django/db/models/fields/related.py#L91) will be taken into account.
+
+```python
+from typing import TYPE_CHECKING
+
+from django.db import models
+
+# Model is imported in an `if TYPE_CHECKING` block if `--type-checking-block` is used.
+if TYPE_CHECKING:
+    # Related model is imported from the corresponding apps models module:
+    from myproject.reporters.models import Reporter
+
+
+class Article(models.Model):
+    # If the field supports `__class_getitem__` at runtime, it is parametrized directly:
+    reporter = models.ForeignKey["Reporter"](
+        "reporters.Reporter",
+        on_delete=models.CASCADE,
+    )
+
+    # Otherwise, an explicit annotation is used. No unnecessary import if model is in the same file.
+    article_version: "models.OneToOneField[ArticleVersion]" = models.OneToOneField(
+        "ArticleVersion",
+        on_delete=models.CASCADE,
+    )
+```
 
 `django-autotyping` is built with [LibCST](https://github.com/Instagram/LibCST/).

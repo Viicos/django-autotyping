@@ -46,7 +46,6 @@ class ForwardRelation:
 class ModelInfo:
     model: ModelType
     module: ModuleType
-
     forward_relations: dict[str, ForwardRelation] = field(default_factory=dict)
 
     @property
