@@ -28,6 +28,36 @@ ASSIGN_FOREIGN_FIELD = m.Assign(
 
 
 class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
+    """A visitor that will add type annotations to forward relations.
+
+    Rule identifier: `DJA001`.
+
+    ```python
+    from typing import TYPE_CHECKING
+
+    from django.db import models
+
+    # Model is imported in an `if TYPE_CHECKING` block if `--type-checking-block` is used.
+    if TYPE_CHECKING:
+        # Related model is imported from the corresponding apps models module:
+        from myproject.reporters.models import Reporter
+
+
+    class Article(models.Model):
+        # If the field supports `__class_getitem__` at runtime, it is parametrized directly:
+        reporter = models.ForeignKey["Reporter"](
+            "reporters.Reporter",
+            on_delete=models.CASCADE,
+        )
+
+        # Otherwise, an explicit annotation is used. No unnecessary import if model is in the same file.
+        article_version: "models.OneToOneField[ArticleVersion]" = models.OneToOneField(
+            "ArticleVersion",
+            on_delete=models.CASCADE,
+        )
+    ```
+    """
+
     METADATA_DEPENDENCIES = {ScopeProvider}
 
     def __init__(self, context: CodemodContext, model_infos: list[ModelInfo]) -> None:
