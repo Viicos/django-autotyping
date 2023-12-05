@@ -117,7 +117,6 @@ def _get_attribute_path(node: cst.Name | cst.Attribute) -> str:
     ```py
     field_1 = ForeignKey(...)  # Returns 'ForeignKey'
     field_2 = models.ForeignKey(...)  # Returns 'models.ForeignKey'
-
     ```
     """
     if isinstance(node, cst.Name):
