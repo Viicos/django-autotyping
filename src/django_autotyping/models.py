@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from types import ModuleType
 
 from django.apps import AppConfig, apps
-from django.db import models
 from django.db.models.fields.related import RelatedField
 
 from .typing import ModelType
@@ -16,7 +15,7 @@ class ForwardRelation:
     class_name: str
     nullable: bool
     has_init_subclass: bool
-    model: type[models.Model]
+    model: ModelType
 
     @property
     def model_module(self) -> ModuleType:
@@ -45,7 +44,7 @@ class ForwardRelation:
 
 @dataclass
 class ModelInfo:
-    model: type[models.Model]
+    model: ModelType
     module: ModuleType
 
     forward_relations: dict[str, ForwardRelation] = field(default_factory=dict)

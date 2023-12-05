@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-import os
-import sys
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 
-from django.conf import ENVIRONMENT_VARIABLE as DJANGO_SETTINGS_MODULE_ENV_KEY
-
-from .codemods import rules
-from .django_utils import parse_models, setup_django
+from .codemods import RulesT, rules
 from .main import main
 
 
@@ -18,7 +13,9 @@ class ScriptNamespace(Namespace):
 
     settings_module: str | None
 
-    disable: list[str] | None
+    disable: list[RulesT] | None
+
+    type_checking_block: bool
 
 
 def _dir_path(path_str: str) -> Path:
@@ -41,7 +38,7 @@ def parse_args() -> ScriptNamespace:
     )
     parser.add_argument(
         "--settings-module",
-        default=os.getenv(DJANGO_SETTINGS_MODULE_ENV_KEY),
+        default=None,
         help="Value of the `DJANGO_SETTINGS_MODULE` environment variable (a dotted Python path).",
     )
     parser.add_argument(
@@ -50,6 +47,12 @@ def parse_args() -> ScriptNamespace:
         nargs="*",
         help="Rules to be disabled.",
     )
+    parser.add_argument(
+        "--type-checking-block",
+        action="store_true",
+        default=False,
+        help="Whether newly added imports should be in an `if TYPE_CHECKING` block (avoids circular imports)."
+    )
 
     return parser.parse_args(namespace=ScriptNamespace())
 
@@ -57,14 +60,4 @@ def parse_args() -> ScriptNamespace:
 def entrypoint() -> None:
     args = parse_args()
 
-    if not args.settings_module:
-        raise ValueError("No value was provided for --settings-module, and no environment variable was set.")
-    os.environ[DJANGO_SETTINGS_MODULE_ENV_KEY] = args.settings_module
-
-    # Patching `sys.path` to allow Django to setup correctly
-    sys.path.append(str(args.path))
-    setup_django()
-
-    model_infos = parse_models(args.path)
-    print(model_infos)
-    main(model_infos)
+    main(args.path, args.settings_module, args.disable, args.type_checking_block)
