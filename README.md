@@ -10,9 +10,6 @@ Automatically add type hints for Django powered applications.
 > [!WARNING]\
 > Still WIP
 
-> [!NOTE]\
-> As of today, generated type hints will only play well with [`django-types`](https://github.com/sbdchd/django-types). [`django-stubs`](https://github.com/typeddjango/django-stubs) requires a type for both the `__set__` and `__get__` types.
-
 # Installation
 
 Through `pip`:
@@ -71,5 +68,8 @@ class Article(models.Model):
         on_delete=models.CASCADE,
     )
 ```
+
+> [!NOTE]\
+> As of today, generated type hints will only play well with [`django-types`](https://github.com/sbdchd/django-types). [`django-stubs`](https://github.com/typeddjango/django-stubs) requires a type for both the `__set__` and `__get__` types.
 
 `django-autotyping` is built with [LibCST](https://github.com/Instagram/LibCST/).

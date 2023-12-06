@@ -102,7 +102,6 @@ class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
             # Handle relationships with itself
             class_ref = self.current_model.class_name
 
-        # TODO Run a transformer to move in an `if TYPE_CHECKING` block.
         if self.current_model.module is not forward_relation.model_module:
             # TODO check if model is from the same app: do relative import
             if self.current_model.app_config is forward_relation.app_config:
@@ -116,14 +115,26 @@ class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
 
         if forward_relation.has_init_subclass:
             # We can parametrize the field directly, we won't get runtime TypeErrors
-            annotation_str = f'["{class_ref}"]'  # forward ref used here as it will be evaluated at runtime
+            annotation_str = f'"{class_ref}"'  # forward ref used here as it will be evaluated at runtime
+            slice = cst.SubscriptElement(slice=cst.Index(value=cst.SimpleString(value=annotation_str)))
             if isinstance(updated_node.value.func, cst.Name):
                 # e.g. `field = ForeignKey(...)`
-                updated_node.value.func.value += annotation_str
+                return updated_node.with_deep_changes(
+                    old_node=updated_node.value,
+                    func=cst.Subscript(
+                        value=updated_node.value.func,
+                        slice=[slice],
+                    ),
+                )
             else:
                 # e.g. `field = models.ForeignKey(...)`
-                updated_node.value.func.attr.value += annotation_str
-            return updated_node
+                return updated_node.with_deep_changes(
+                    old_node=updated_node.value.func,
+                    attr=cst.Subscript(
+                        value=updated_node.value.func.attr,
+                        slice=[slice],
+                    ),
+                )
         else:
             # We explicitly annotate to avoid runtime TypeErrors
             # e.g. from `field = ForeignKey(...)` to `field: ForeignKey[...] = ForeignKey(...)`
