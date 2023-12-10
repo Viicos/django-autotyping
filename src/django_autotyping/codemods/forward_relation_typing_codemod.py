@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Union, cast  # Old style Union required on decorated methods, see Instagram/LibCST#870.
+
 import libcst as cst
 import libcst.matchers as m
 from django.db.models.fields.related import RECURSIVE_RELATIONSHIP_CONSTANT
@@ -8,6 +11,7 @@ from libcst.codemod.visitors import AddImportsVisitor
 from libcst.metadata import ScopeProvider
 from libcst.metadata.scope_provider import ClassScope
 
+from ..django_utils import DjangoContext
 from ..models import ModelInfo
 
 ASSIGN_FOREIGN_FIELD = m.Assign(
@@ -26,9 +30,12 @@ ASSIGN_FOREIGN_FIELD = m.Assign(
     )
 )
 
+# Either class A or class A(object)
+BARE_CLASS_DEF = m.ClassDef(bases=m.OneOf([m.AtMostN(n=0)], [m.Arg(value=m.Name(value="object"))]))
 
-class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
-    """A visitor that will add type annotations to forward relations.
+
+class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
+    """A codemod that will add type annotations to forward relations.
 
     Rule identifier: `DJA001`.
 
@@ -60,14 +67,21 @@ class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
 
     METADATA_DEPENDENCIES = {ScopeProvider}
 
-    def __init__(self, context: CodemodContext, model_infos: list[ModelInfo]) -> None:
+    def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.model_infos = model_infos
+        self.django_context = cast(DjangoContext, context.scratch["django_context"])
+        self.model_infos = [
+            model_info
+            for model_info in self.django_context.model_infos
+            if Path(model_info.filename) == Path(context.filename)  # type: ignore[arg-type]
+        ]
         self.current_model: ModelInfo | None = None
 
     def visit_ClassDef(self, node: cst.ClassDef) -> bool | None:
         scope = self.get_metadata(ScopeProvider, node)
-        if type(scope) is ClassScope or not node.bases:  # TODO check for `object` base as well
+        # Extra safety:
+        # We avoid parsing nested classes definitions, or classes wihtout base classes
+        if type(scope) is ClassScope or m.matches(node, BARE_CLASS_DEF):
             return False
         self.current_model = self.get_model_info(node)
 
@@ -76,7 +90,9 @@ class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
         return updated_node
 
     @m.leave(ASSIGN_FOREIGN_FIELD)
-    def type_any_to_one_field(self, original_node: cst.Assign, updated_node: cst.Assign) -> cst.Assign | cst.AnnAssign:
+    def type_any_to_one_field(
+        self, original_node: cst.Assign, updated_node: cst.Assign
+    ) -> Union[cst.Assign, cst.AnnAssign]:  # noqa: UP007
         if self.current_model is None:
             return updated_node
 
@@ -87,7 +103,7 @@ class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
             return updated_node
 
         extracted = m.extract(updated_node, ASSIGN_FOREIGN_FIELD)
-        string_reference: cst.SimpleString = extracted.get("string_reference")
+        string_reference: cst.SimpleString | None = extracted.get("string_reference")
         if not string_reference:
             return updated_node
 
@@ -102,7 +118,6 @@ class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
             # Handle relationships with itself
             class_ref = self.current_model.class_name
 
-        # TODO Run a transformer to move in an `if TYPE_CHECKING` block.
         if self.current_model.module is not forward_relation.model_module:
             # TODO check if model is from the same app: do relative import
             if self.current_model.app_config is forward_relation.app_config:
@@ -114,16 +129,28 @@ class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
                     obj=class_ref,
                 )
 
-        if forward_relation.has_init_subclass:
+        if forward_relation.has_class_getitem or self.django_context.assume_class_getitem:
             # We can parametrize the field directly, we won't get runtime TypeErrors
-            annotation_str = f'["{class_ref}"]'  # forward ref used here as it will be evaluated at runtime
+            annotation_str = f'"{class_ref}"'  # forward ref used here as it will be evaluated at runtime
+            slice = cst.SubscriptElement(slice=cst.Index(value=cst.SimpleString(value=annotation_str)))
             if isinstance(updated_node.value.func, cst.Name):
                 # e.g. `field = ForeignKey(...)`
-                updated_node.value.func.value += annotation_str
+                return updated_node.with_deep_changes(
+                    old_node=updated_node.value,
+                    func=cst.Subscript(
+                        value=updated_node.value.func,
+                        slice=[slice],
+                    ),
+                )
             else:
                 # e.g. `field = models.ForeignKey(...)`
-                updated_node.value.func.attr.value += annotation_str
-            return updated_node
+                return updated_node.with_deep_changes(
+                    old_node=updated_node.value.func,
+                    attr=cst.Subscript(
+                        value=updated_node.value.func.attr,
+                        slice=[slice],
+                    ),
+                )
         else:
             # We explicitly annotate to avoid runtime TypeErrors
             # e.g. from `field = ForeignKey(...)` to `field: ForeignKey[...] = ForeignKey(...)`
@@ -136,6 +163,7 @@ class ForwardRelationTypingVisitor(VisitorBasedCodemodCommand):
 
     def get_model_info(self, node: cst.ClassDef) -> ModelInfo | None:
         # TODO use a provider instead?
+        # Not really possible as of today (metadata providers can't be initialized with custom data).
         return next((model_info for model_info in self.model_infos if model_info.class_name == node.name.value), None)
 
 

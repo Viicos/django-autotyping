@@ -1,0 +1,48 @@
+name: lint
+
+on: [push]
+
+jobs:
+  ruff-format:
+    name: Check code formatting with Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+            python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install pip-tools
+          pip-sync requirements/requirements.txt requirements/requirements-dev.txt
+      - name: Run Ruff formatter
+        run: ruff format --diff
+
+  ruff-check:
+    name: Check code linting with Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+            python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install pip-tools
+          pip-sync requirements/requirements.txt requirements/requirements-dev.txt
+      - name: Run Ruff formatter
+        run: ruff check --output-format=github
+  mypy:
+    if: false  # Disabled for now
+    name: Check type hints with mypy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          pip install -r requirements/requirements.txt requirements/requirements-dev.txt
+          mypy src/
