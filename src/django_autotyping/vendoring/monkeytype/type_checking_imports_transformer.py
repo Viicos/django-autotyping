@@ -76,7 +76,10 @@ class MoveImportsToTypeCheckingBlockVisitor(ContextAwareTransformer):
 
     def _split_module(
         self, module: Module
-    ) -> tuple[list[SimpleStatementLine | BaseCompoundStatement], list[SimpleStatementLine | BaseCompoundStatement],]:
+    ) -> tuple[
+        list[SimpleStatementLine | BaseCompoundStatement],
+        list[SimpleStatementLine | BaseCompoundStatement],
+    ]:
         type_checking_block_add_location = 0
         gatherer = GatherImportsVisitor(self.context)
         module.visit(gatherer)

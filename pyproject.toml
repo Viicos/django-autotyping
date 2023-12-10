@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "libcst>=0.4.10",
     "django",
+    "colorama>=0.4.6; platform_system == 'Windows'"
 ]
 dynamic = ["version"]
 
@@ -45,10 +46,8 @@ where = ["src"]
 [tool.setuptools.package-data]
 "django_autotyping" = ["py.typed"]
 
-[tool.black]
-line-length = 120
-
 [tool.ruff]
+line-length = 120
 select = [
     "E",  # pycodestyle (E)
     "W",  # pycodestyle (W)
@@ -57,11 +56,13 @@ select = [
     "I",  # isort
     "PL", # Pylint
 ]
-line-length = 120
-src = ["src"]
 ignore = [
-    "PLR0912"
+    "PLR0912",
+    "PLR0913",
 ]
+src = ["src"]
+exclude = ["tests/sampleproject"]
+target-version = "py38"
 
 [tool.ruff.isort]
 known-first-party = ["django_autotyping"]

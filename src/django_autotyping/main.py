@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import difflib
 import os
-import sys
 from pathlib import Path
-from typing import Collection
+from typing import Collection, Iterator
 
 import libcst as cst
 from django.conf import ENVIRONMENT_VARIABLE as DJANGO_SETTINGS_MODULE_ENV_KEY
 from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
 
-from .codemods import ForwardRelationTypingVisitor, RulesT, gather_codemods
-from .django_utils import parse_models, setup_django
+from .codemods import RulesT, gather_codemods
+from .django_utils import DjangoContext
 from .vendoring.monkeytype import MoveImportsToTypeCheckingBlockVisitor, get_newly_imported_items
-from .models import ModelInfo
 
 
 def main(
@@ -22,91 +20,79 @@ def main(
     diff: bool = False,
     disabled_rules: Collection[RulesT] | None = None,
     type_checking_block: bool = True,
+    assume_class_getitem: bool = False,
 ) -> None:
     settings_module = settings_module or os.getenv(DJANGO_SETTINGS_MODULE_ENV_KEY)
-    disabled_rules = disabled_rules or []
-
     if not settings_module:
         raise ValueError("No value was provided for --settings-module, and no environment variable was set.")
 
-    os.environ[DJANGO_SETTINGS_MODULE_ENV_KEY] = settings_module
+    disabled_rules = disabled_rules or []
 
-    # Patching `sys.path` to allow Django to setup correctly
-    sys.path.append(str(app_path))
-    setup_django()
+    django_context = DjangoContext(settings_module, Path(app_path), assume_class_getitem)
 
     codemods = gather_codemods(disabled_rules)
-    model_infos = parse_models(Path(app_path))
 
-    model_filenames = set(model_info.filename for model_info in model_infos)
+    model_filenames = set(model_info.filename for model_info in django_context.model_infos)
 
     for filename in model_filenames:
-        filename_model_infos = [model for model in model_infos if Path(model.filename) == Path(filename)]
-        lines = run_codemods(codemods, filename_model_infos, filename, diff, type_checking_block)
-        if lines:
-            color_diff(lines)
+        intput_source = Path(filename).read_text("utf-8")
+        output_source = run_codemods(codemods, django_context, filename, type_checking_block)
+        if intput_source != output_source:
+            if diff:
+                lines = difflib.unified_diff(
+                    intput_source.splitlines(keepends=True),
+                    output_source.splitlines(keepends=True),
+                    fromfile=filename,
+                    tofile=filename,
+                )
+                color_diff(lines)
+            else:
+                Path(filename).write_text(output_source, encoding="utf-8")
 
 
 def run_codemods(
     codemods: list[type[VisitorBasedCodemodCommand]],
-    model_infos: list[ModelInfo],
+    django_context: DjangoContext,
     filename: str,
-    diff: bool,
     type_checking_block: bool,
-) -> list[str]:
+) -> str:
     context = CodemodContext(
         filename=filename,
-        scratch={},
+        scratch={
+            "django_context": django_context,
+        },
     )
 
-    file_path = Path(filename)
-    with file_path.open("r+", encoding="utf-8") as fp:
-        input_code = fp.read()
-        fp.seek(0)
+    input_code = Path(filename).read_text(encoding="utf-8")
+    input_module = cst.parse_module(input_code)
+    output_module = cst.parse_module(input_code)
+    for codemod in codemods:
+        transformer = codemod(context=context)
 
-        input_module = cst.parse_module(input_code)
-        output_module = cst.parse_module(input_code)
-        for codemod in codemods:
-            transformer = codemod(context=context, model_infos=model_infos)  # TODO pass model_infos in context instead?
+        output_module = transformer.transform_module(output_module)
 
-            output_module = transformer.transform_module(output_module)
+    if type_checking_block:
+        newly_imported_items = get_newly_imported_items(output_module, input_module)
+        if newly_imported_items:
+            context = CodemodContext()
+            MoveImportsToTypeCheckingBlockVisitor.store_imports_in_context(
+                context,
+                newly_imported_items,
+            )
+            type_checking_block_transformer = MoveImportsToTypeCheckingBlockVisitor(context)
+            output_module = type_checking_block_transformer.transform_module(output_module)
 
-        if type_checking_block:
-            newly_imported_items = get_newly_imported_items(output_module, input_module)
-            print(newly_imported_items)
-            if newly_imported_items:
-                context = CodemodContext()
-                MoveImportsToTypeCheckingBlockVisitor.store_imports_in_context(
-                    context,
-                    newly_imported_items,
-                )
-                type_checking_block_transformer = MoveImportsToTypeCheckingBlockVisitor(context)
-                output_module = type_checking_block_transformer.transform_module(output_module)
-
-        output_code = output_module.code
-
-        if output_code != input_code:
-            if diff:
-                lines = difflib.unified_diff(
-                    input_code.splitlines(keepends=True),
-                    output_code.splitlines(keepends=True),
-                    fromfile=filename,
-                    tofile=filename,
-                )
-                return list(lines)
-            else:
-                fp.write(output_code)
-                fp.truncate()
+    return output_module.code
 
 
-def color_diff(lines: list[str]) -> None:
+def color_diff(lines: Iterator[str]) -> None:
     for line in lines:
-        line = line.rstrip("\n")
-        if line.startswith("+"):
-            print("\033[92m" + line + "\033[0m")
-        elif line.startswith("-"):
-            print("\033[91m" + line + "\033[0m")
-        elif line.startswith("^"):
-            print(line + "\033[0m")
+        line_s = line.rstrip("\n")
+        if line_s.startswith("+"):
+            print("\033[32m" + line_s + "\033[0m")
+        elif line_s.startswith("-"):
+            print("\033[31m" + line_s + "\033[0m")
+        elif line_s.startswith("^"):
+            print("\033[34m" + line_s + "\033[0m")
         else:
-            print(line + "\033[0m")
+            print(line_s)

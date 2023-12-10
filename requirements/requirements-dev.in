@@ -1,0 +1,5 @@
+-c requirements.txt
+django-stubs
+mypy
+ruff
+types-colorama

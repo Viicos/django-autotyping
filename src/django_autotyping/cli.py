@@ -19,6 +19,8 @@ class ScriptNamespace(Namespace):
 
     type_checking_block: bool
 
+    assume_class_getitem: bool
+
 
 def _dir_path(path_str: str) -> Path:
     if not (path := Path(path_str)).is_dir():
@@ -59,6 +61,12 @@ def parse_args() -> ScriptNamespace:
         action="store_true",
         help="Whether newly added imports should be in an `if TYPE_CHECKING` block (avoids circular imports).",
     )
+    parser.add_argument(
+        "--assume-class-getitem",
+        action="store_true",
+        help="Whether generic classes in stubs files but not at runtime should be assumed "
+        "to have a `__class_getitem__` method. This can be achieved by using `django-stubs-ext` or manually.",
+    )
 
     return parser.parse_args(namespace=ScriptNamespace())
 
@@ -66,4 +74,4 @@ def parse_args() -> ScriptNamespace:
 def entrypoint() -> None:
     args = parse_args()
 
-    main(args.path, args.settings_module, args.diff, args.disable, args.type_checking_block)
+    main(args.path, args.settings_module, args.diff, args.disable, args.type_checking_block, args.assume_class_getitem)

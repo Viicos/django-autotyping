@@ -4,7 +4,6 @@ Automatically add type hints for Django powered applications.
 
 [![Python versions](https://img.shields.io/pypi/pyversions/django-autotyping.svg)](https://www.python.org/downloads/)
 [![PyPI version](https://img.shields.io/pypi/v/django-autotyping.svg)](https://pypi.org/project/django-autotyping/)
-[![Code style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/en/stable/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 > [!WARNING]\
@@ -32,10 +31,14 @@ options:
   -h, --help            show this help message and exit
   --settings-module SETTINGS_MODULE
                         Value of the `DJANGO_SETTINGS_MODULE` environment variable (a dotted Python path).
+  --diff                Show diff instead of applying changes to existing files.
   --disable [{DJA001} ...]
                         Rules to be disabled.
   --type-checking-block
                         Whether newly added imports should be in an `if TYPE_CHECKING` block (avoids circular imports).
+  --assume-class-getitem
+                        Whether generic classes in stubs files but not at runtime should be assumed to have a `__class_getitem__` method. This can be
+                        achieved by using `django-stubs-ext` or manually.
 ```
 
 # Rules
