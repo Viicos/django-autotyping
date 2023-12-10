@@ -92,7 +92,7 @@ class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
     @m.leave(ASSIGN_FOREIGN_FIELD)
     def type_any_to_one_field(
         self, original_node: cst.Assign, updated_node: cst.Assign
-    ) -> Union[cst.Assign, cst.AnnAssign]:
+    ) -> Union[cst.Assign, cst.AnnAssign]:  # noqa: UP007
         if self.current_model is None:
             return updated_node
 
