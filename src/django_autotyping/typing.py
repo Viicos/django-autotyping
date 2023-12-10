@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Type
+
 from django.db import models
 
-ModelType = type[models.Model]
+ModelType = Type[models.Model]
