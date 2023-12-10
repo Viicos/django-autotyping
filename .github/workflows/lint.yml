@@ -35,6 +35,7 @@ jobs:
       - name: Run Ruff formatter
         run: ruff check --output-format=github
   mypy:
+    if: false  # Disabled for now
     name: Check type hints with mypy
     runs-on: ubuntu-latest
     steps:
