@@ -16,8 +16,5 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          pip install -r requirements/requirements.txt -r requirements/requirements-test.txt
       - name: Test with tox
         run: tox
