@@ -18,6 +18,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          pip install -r requirements/requirements.txt requirements/requirements-test.txt
+          pip install -r requirements/requirements.txt -r requirements/requirements-test.txt
       - name: Test with tox
         run: tox
