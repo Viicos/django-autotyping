@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
+from typing import Union, cast  # Old style Union required on decorated methods, see Instagram/LibCST#870.
 
 import libcst as cst
 import libcst.matchers as m
@@ -90,7 +90,9 @@ class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
         return updated_node
 
     @m.leave(ASSIGN_FOREIGN_FIELD)
-    def type_any_to_one_field(self, original_node: cst.Assign, updated_node: cst.Assign) -> cst.Assign | cst.AnnAssign:
+    def type_any_to_one_field(
+        self, original_node: cst.Assign, updated_node: cst.Assign
+    ) -> Union[cst.Assign, cst.AnnAssign]:
         if self.current_model is None:
             return updated_node
 
