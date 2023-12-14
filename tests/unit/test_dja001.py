@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 from libcst.codemod import CodemodTest
 
-from django_autotyping.codemods import ForwardRelationTypingCodemod
-from django_autotyping.django_utils import DjangoContext
-from django_autotyping.main import run_codemods
+from django_autotyping.codemodding.codemods import ForwardRelationTypingCodemod
+from django_autotyping.codemodding.django_utils import DjangoContext
+from django_autotyping.codemodding.main import run_codemods
 
 expected_no_type_checking_block = """
 from django.db import models

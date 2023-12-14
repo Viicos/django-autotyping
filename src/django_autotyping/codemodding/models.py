@@ -8,7 +8,7 @@ from typing import cast
 from django.apps import AppConfig, apps
 from django.db.models.fields.related import RelatedField
 
-from .typing import ModelType
+from ..typing import ModelType
 
 
 @dataclass
