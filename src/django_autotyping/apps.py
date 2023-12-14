@@ -1,13 +1,7 @@
-from typing import Any
-
 from django.apps import AppConfig
-from django.utils.autoreload import StatReloader, autoreload_started
+from django.db.models.signals import post_migrate
 
-from .stubbing import create_stubs
-
-
-def receiver(sender: StatReloader, **kwargs: Any):
-    pass
+from .stubbing import create_stubs, post_migrate_receiver
 
 
 class DjangoAutotypingAppConfig(AppConfig):
@@ -18,5 +12,5 @@ class DjangoAutotypingAppConfig(AppConfig):
 
         create_stubs(AUTOTYPING_STUBS_DIR)
 
-        autoreload_started.connect(receiver)
+        post_migrate.connect(post_migrate_receiver, sender=self)
         return super().ready()

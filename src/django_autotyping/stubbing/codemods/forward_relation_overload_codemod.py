@@ -49,6 +49,8 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
     ```
     """
 
+    STUB_FILES = {"db/models/fields/related.pyi"}
+
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
         self.django_models = cast(list[ModelType], context.scratch["django_models"])
