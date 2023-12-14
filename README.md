@@ -19,6 +19,14 @@ pip install django-autotyping
 
 # Usage
 
+`django-autotyping` is usable in two ways:
+- As a Django development application.
+- As a linter that will automatically apply changes to your code.
+
+# Django application - dynamic stub files
+
+# Linter - automatic codemods
+
 `django-autotyping` can be used as a CLI program:
 
 ```sh
