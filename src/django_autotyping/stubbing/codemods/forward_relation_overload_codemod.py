@@ -20,6 +20,10 @@ RELATED_CLASS_DEF_MATCHER = m.ClassDef(
 )
 """Matches all foreign field class definitions that supports parametrization of the `__set__` and `__get__` types."""
 
+MANY_TO_MANY_CLASS_DEF_MATCHER = m.ClassDef(name=m.Name("ManyToManyField"))
+"""Matches the `ManyToManyField` class definition."""
+
+
 INIT_METHOD_MATCHER = m.FunctionDef(name=m.Name("__init__"))
 """Matches all `__init__` methods."""
 
@@ -37,12 +41,12 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
     ```python
     class ForeignKey(ForeignObject[_ST, _GT]):
         # For each model, will add two overloads:
-        # - 1st: `null: Literal[True]`, which will set parametrize `ForeignKey` set/get types as `Optional`.
+        # - 1st: `null: Literal[True]`, which will parametrize `ForeignKey` get types as `Optional`.
         # - 2nd: `null: Literal[False] = ...` (the default).
         # `to` is annotated as a `Literal`, with two values: {app_label}.{model_name} and {model_name}.
         @overload
         def __init__(
-            self: ForeignKey[MyModel | <pk_type> | None, MyModel | None],
+            self: ForeignKey[MyModel | None, MyModel | None],
             to: Literal["MyModel", "myapp.MyModel"],
             ...
         ) -> None: ...
@@ -88,48 +92,92 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
             body=body,
         )
 
-    @m.leave(RELATED_CLASS_DEF_MATCHER)
-    def mutate_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
-        extracted = m.extract(updated_node, RELATED_CLASS_DEF_MATCHER)
-        field_cls_name: str = extracted.get("field_cls_name").value
+    @m.leave(MANY_TO_MANY_CLASS_DEF_MATCHER)
+    def mutate_ManyToManyField_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
+        """Add the necessary overloads for `ManyToManyField`.
 
-        init_node: cst.FunctionDef = next(
-            node for node in updated_node.body.body if m.matches(node, INIT_METHOD_MATCHER)
-        )
+        Due to combinatorial explosion, we can't add overloads that would handle `through` models alongside with `to`.
+        """
+        init_node = _get_init_node(updated_node)
+        overload_init = init_node.with_changes(decorators=[OVERLOAD_DECORATOR])
 
         overloads: list[cst.FunctionDef] = []
 
-        # For each model, create two overloads, depending on the `null` valu:
+        for model in self.django_models:
+            # sets `self: ManyToManyField[model.__name__, _Through]`
+            self_param = _get_param(overload_init, "self")
+            overload = overload_init.with_deep_changes(
+                old_node=self_param,
+                annotation=cst.Annotation(
+                    annotation=helpers.parse_template_expression(f"ManyToManyField[{model.__name__}, _Through]")
+                ),
+            )
+
+            # sets `to: Literal["model_name", "app_label.model_name"]`
+            to_param = _get_param(overload, "to")
+            overload = overload.with_deep_changes(
+                old_node=to_param,
+                annotation=_build_to_annotation(model),
+            )
+
+            overloads.append(overload)
+
+        # Now, handle the last overload, matching against a real model type:
+
+        # sets `to: type[_To]`, essentially removing the `| str` part. This way,
+        # we don't need to explicitly annotate `self`, type checkers will understand natively.
+        to_param = _get_param(overload_init, "to")
+        model_overload = overload_init.with_deep_changes(
+            old_node=to_param,
+            annotation=cst.Annotation(
+                annotation=cst.Subscript(
+                    value=cst.Name("type"), slice=[cst.SubscriptElement(cst.Index(cst.Name("_To")))]
+                )
+            ),
+        )
+
+        overloads.append(model_overload)
+
+        new_body = list(updated_node.body.body)
+        init_index = new_body.index(init_node)
+        new_body.pop(init_index)
+
+        new_body[init_index:init_index] = overloads
+
+        return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
+
+    @m.leave(RELATED_CLASS_DEF_MATCHER)
+    def mutate_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
+        """Add the necessary overloads to foreign fields that supports
+        that supports parametrization of the `__set__` and `__get__` types.
+        """
+        extracted = m.extract(updated_node, RELATED_CLASS_DEF_MATCHER)
+        field_cls_name: str = extracted.get("field_cls_name").value
+
+        init_node = _get_init_node(updated_node)
+        overload_init = init_node.with_changes(decorators=[OVERLOAD_DECORATOR])
+
+        overloads: list[cst.FunctionDef] = []
+
+        # For each model, create two overloads, depending on the `null` value:
         for model in self.django_models:
             for nullable in (True, False):  # Order matters!
-                overload = init_node.with_changes(decorators=[OVERLOAD_DECORATOR])
-
                 # sets `self: FieldName[<set_type>, <get_type>]`
-                self_param = next(param for param in overload.params.params if param.name.value == "self")
-                overload = overload.with_deep_changes(
+                self_param = _get_param(overload_init, "self")
+                overload = overload_init.with_deep_changes(
                     old_node=self_param,
                     annotation=_build_self_annotation(field_cls_name, model.__name__, nullable),
                 )
 
                 # sets `to: Literal["model_name", "app_label.model_name"]`
-                to_param = next(param for param in overload.params.params if param.name.value == "to")
+                to_param = _get_param(overload, "to")
                 overload = overload.with_deep_changes(
                     old_node=to_param,
-                    annotation=cst.Annotation(
-                        annotation=cst.Subscript(
-                            value=cst.Name("Literal"),
-                            slice=[
-                                cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model.__name__}"'))),
-                                cst.SubscriptElement(
-                                    cst.Index(cst.SimpleString(f'"{model._meta.app_label}.{model.__name__}"'))
-                                ),
-                            ],
-                        )
-                    ),
+                    annotation=_build_to_annotation(model),
                 )
 
                 # sets `null: Literal[True/False]` (with the default removed accordingly)
-                null_param = next(param for param in overload.params.kwonly_params if param.name.value == "null")
+                null_param = _get_kw_param(overload, "null")
                 overload = overload.with_deep_changes(
                     old_node=null_param,
                     annotation=cst.Annotation(
@@ -145,11 +193,9 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
         # Now, handle the last overload, matching against a real model type:
 
-        model_overload = init_node.with_changes(decorators=[OVERLOAD_DECORATOR])
-
         # sets `to: type[_ModelT]`, the type variable will be used to annotate `self` as well
-        to_param = next(param for param in model_overload.params.params if param.name.value == "to")
-        model_overload = model_overload.with_deep_changes(
+        to_param = _get_param(overload_init, "to")
+        model_overload = overload_init.with_deep_changes(
             old_node=to_param,
             annotation=cst.Annotation(
                 annotation=cst.Subscript(
@@ -160,13 +206,13 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
         for nullable in (True, False):  # Order matters!
             # sets `self: FieldName[<set_type>, <get_type>]`
-            self_param = next(param for param in model_overload.params.params if param.name.value == "self")
+            self_param = _get_param(model_overload, "self")
             model_overload_ = model_overload.with_deep_changes(
                 old_node=self_param, annotation=_build_self_annotation(field_cls_name, "_ModelT", nullable)
             )
 
             # sets `null: Literal[True/False]` (with the default removed accordingly)
-            null_param = next(param for param in model_overload_.params.kwonly_params if param.name.value == "null")
+            null_param = _get_kw_param(model_overload, "null")
             model_overload_ = model_overload_.with_deep_changes(
                 old_node=null_param,
                 annotation=cst.Annotation(
@@ -180,6 +226,24 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
             overloads.append(model_overload_)
 
+        # Temp workaround to have autocompletion working, this overload shouldn't be used as a match by type checkers
+        # to_param = _get_param(overload_init, "to")
+        # literal_completion_overload = overload_init.with_deep_changes(
+        #     old_node=to_param,
+        #     annotation=cst.Annotation(
+        #         annotation=cst.Subscript(
+        #             value=cst.Name("Literal"),
+        #             slice=[
+        #                 cst.SubscriptElement(cst.Index(cst.SimpleString(string)))
+        #                 for model in self.django_models
+        #                 for string in (f'"{model.__name__}"', f'"{model._meta.app_label}.{model.__name__}"')
+        #             ],
+        #         )
+        #     ),
+        # )
+
+        # overloads.append(literal_completion_overload)
+
         new_body = list(updated_node.body.body)
         init_index = new_body.index(init_node)
         new_body.pop(init_index)
@@ -192,14 +256,43 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 def _build_self_annotation(field_cls_name: str, model_name: str, nullable: bool) -> cst.Annotation:
     """Builds the `self` annotation of foreign fields.
 
-    With `field_cls_name="ForeignKey"`, `model_name="MyModel"` and `nullable=True`, the following is produced:
+    With `field_cls_name="ForeignKey"`, `model_name="MyModel"` and `nullable=False`, the following is produced:
 
-    `ForeignKey[MyModel | int | None, MyModel | None]`
+    >>> ForeignKey[MyModel | None, MyModel]
+
+    (Even if not nullable, the `__set__` type can still be `None`. Having a foreign instance is only enforced on save).
     """
-    # TODO handle FK types, currently assumed to be `int`
     none_part = " | None" if nullable else ""
     return cst.Annotation(
-        annotation=helpers.parse_template_expression(
-            f"{field_cls_name}[{model_name} | int{none_part}, {model_name}{none_part}]"
+        annotation=helpers.parse_template_expression(f"{field_cls_name}[{model_name} | None, {model_name}{none_part}]")
+    )
+
+
+def _build_to_annotation(model: ModelType) -> cst.Annotation:
+    """Builds the `to` annotation of foreign fields.
+
+    This will result in a `Literal` with two string values, the model name and the dotted app label and model name.
+    """
+    return cst.Annotation(
+        annotation=cst.Subscript(
+            value=cst.Name("Literal"),
+            slice=[
+                cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model.__name__}"'))),
+                cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model._meta.app_label}.{model.__name__}"'))),
+            ],
         )
     )
+
+
+def _get_init_node(node: cst.ClassDef) -> cst.FunctionDef:
+    return helpers.ensure_type(
+        next(node for node in node.body.body if m.matches(node, INIT_METHOD_MATCHER)), cst.FunctionDef
+    )
+
+
+def _get_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
+    return next(param for param in node.params.params if param.name.value == param_name)
+
+
+def _get_kw_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
+    return next(param for param in node.params.kwonly_params if param.name.value == param_name)

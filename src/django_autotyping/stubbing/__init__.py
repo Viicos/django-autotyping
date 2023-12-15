@@ -22,6 +22,9 @@ def post_migrate_receiver(sender: AppConfig, **kwargs: Any):
 
 
 def run_codemods(codemods: list[type[VisitorBasedCodemodCommand]], stubs_dir: Path, apps: Apps) -> None:
+    # Temp hack: the apps object from the post_migrate signal is a `StatesApp` instance, missing some data we need
+    from django.apps import apps
+
     for codemod in codemods:
         context = CodemodContext(scratch={"django_models": apps.get_models()})
 
