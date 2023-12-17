@@ -34,6 +34,7 @@ pip install django-autotyping
 - In your configuration, set `AUTOTYPING_STUBS_DIR` to a directory where local stubs should live. By default, `pyright`
 looks for the directory `typings/`. For `mypy`, you will have to configure the [`mypy_path`](https://mypy.readthedocs.io/en/stable/config_file.html#confval-mypy_path) value (or use the `MYPY_PATH` environment variable).
 - Optionally, you can disable specific rules by setting `AUTOTYPING_DISABLED_RULES`.
+- Install `django-stubs` into your environment.
 
 Stubs will be generated when the [`post_migrate`](https://docs.djangoproject.com/en/dev/ref/signals/#post-migrate) signal is emitted (you can still run the [`migrate`](https://docs.djangoproject.com/en/dev/ref/django-admin/#migrate) command even if no migrations are to be applied).
 
