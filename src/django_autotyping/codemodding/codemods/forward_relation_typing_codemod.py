@@ -14,7 +14,7 @@ from libcst.metadata.scope_provider import ClassScope
 from ..django_utils import DjangoContext
 from ..models import ModelInfo
 
-ASSIGN_FOREIGN_FIELD = m.Assign(
+ASSIGN_FOREIGN_FIELD_MATCHER = m.Assign(
     value=m.Call(
         args=m.OneOf(
             (  # String reference as a kw: Field(to="Model"):
@@ -30,8 +30,8 @@ ASSIGN_FOREIGN_FIELD = m.Assign(
     )
 )
 
-# Either class A or class A(object)
-BARE_CLASS_DEF = m.ClassDef(bases=m.OneOf([m.AtMostN(n=0)], [m.Arg(value=m.Name(value="object"))]))
+# Either `class A` or `class A(object)`
+BARE_CLASS_DEF_MATCHER = m.ClassDef(bases=m.OneOf([m.AtMostN(n=0)], [m.Arg(value=m.Name(value="object"))]))
 
 
 class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
@@ -81,7 +81,7 @@ class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
         scope = self.get_metadata(ScopeProvider, node)
         # Extra safety:
         # We avoid parsing nested classes definitions, or classes wihtout base classes
-        if type(scope) is ClassScope or m.matches(node, BARE_CLASS_DEF):
+        if type(scope) is ClassScope or m.matches(node, BARE_CLASS_DEF_MATCHER):
             return False
         self.current_model = self.get_model_info(node)
 
@@ -89,7 +89,7 @@ class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
         self.current_model = None
         return updated_node
 
-    @m.leave(ASSIGN_FOREIGN_FIELD)
+    @m.leave(ASSIGN_FOREIGN_FIELD_MATCHER)
     def type_any_to_one_field(
         self, original_node: cst.Assign, updated_node: cst.Assign
     ) -> Union[cst.Assign, cst.AnnAssign]:  # noqa: UP007
@@ -102,7 +102,7 @@ class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
         if forward_relation is None:
             return updated_node
 
-        extracted = m.extract(updated_node, ASSIGN_FOREIGN_FIELD)
+        extracted = m.extract(updated_node, ASSIGN_FOREIGN_FIELD_MATCHER)
         string_reference: cst.SimpleString | None = extracted.get("string_reference")
         if not string_reference:
             return updated_node
