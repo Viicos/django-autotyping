@@ -8,6 +8,8 @@ from libcst.codemod.visitors import AddImportsVisitor
 
 from django_autotyping.typing import ModelType
 
+from .utils import get_kw_param, get_method_node, get_model_alias, get_model_imports, get_param, is_duplicate_model
+
 OVERLOAD_DECORATOR = cst.Decorator(decorator=cst.Name("overload"))
 
 MODEL_T_TYPE_VAR = helpers.parse_template_statement('_ModelT = TypeVar("_ModelT", bound=Model)')
@@ -59,12 +61,15 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
         super().__init__(context)
         self.django_models = cast(list[ModelType], context.scratch["django_models"])
 
-        added_imports = [
-            (model._meta.app_config.models_module.__name__, model.__name__) for model in self.django_models
-        ]
+        model_imports = get_model_imports(self.django_models)
+
+        # TODO LibCST should support adding imports from `ImportItem` objects
+        imports = AddImportsVisitor._get_imports_from_context(context)
+        imports.extend(model_imports)
+        self.context.scratch[AddImportsVisitor.CONTEXT_KEY] = imports
 
         # Even though these are most likely included, we import them for safety:
-        added_imports += [
+        added_imports = [
             ("typing", "Literal"),
             ("typing", "TypeVar"),
             ("typing", "overload"),
@@ -98,26 +103,31 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
         Due to combinatorial explosion, we can't add overloads that would handle `through` models alongside with `to`.
         """
-        init_node = _get_init_node(updated_node)
+        init_node = get_method_node(updated_node, "__init__")
         overload_init = init_node.with_changes(decorators=[OVERLOAD_DECORATOR])
 
         overloads: list[cst.FunctionDef] = []
 
         for model in self.django_models:
-            # sets `self: ManyToManyField[model.__name__, _Through]`
-            self_param = _get_param(overload_init, "self")
+            # TODO This needs a proper Django Context object, instead of these utilities
+            model_name = get_model_alias(model, self.django_models) or model.__name__
+            duplicate = is_duplicate_model(model.__name__, self.django_models)
+
+            # sets `self: ManyToManyField[model_name, _Through]`
+            self_param = get_param(overload_init, "self")
             overload = overload_init.with_deep_changes(
                 old_node=self_param,
                 annotation=cst.Annotation(
-                    annotation=helpers.parse_template_expression(f"ManyToManyField[{model.__name__}, _Through]")
+                    annotation=helpers.parse_template_expression(f"ManyToManyField[{model_name}, _Through]")
                 ),
             )
 
             # sets `to: Literal["model_name", "app_label.model_name"]`
-            to_param = _get_param(overload, "to")
+            # (or just "app_label.model_name" if duplicate model names)
+            to_param = get_param(overload, "to")
             overload = overload.with_deep_changes(
                 old_node=to_param,
-                annotation=_build_to_annotation(model),
+                annotation=_build_to_annotation(model, duplicate),
             )
 
             overloads.append(overload)
@@ -125,8 +135,8 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
         # Now, handle the last overload, matching against a real model type:
 
         # sets `to: type[_To]`, essentially removing the `| str` part. This way,
-        # we don't need to explicitly annotate `self`, type checkers will understand natively.
-        to_param = _get_param(overload_init, "to")
+        # we don't need to explicitly annotate `self`, type checkers will infer this natively.
+        to_param = get_param(overload_init, "to")
         model_overload = overload_init.with_deep_changes(
             old_node=to_param,
             annotation=cst.Annotation(
@@ -154,30 +164,34 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
         extracted = m.extract(updated_node, RELATED_CLASS_DEF_MATCHER)
         field_cls_name: str = extracted.get("field_cls_name").value
 
-        init_node = _get_init_node(updated_node)
+        init_node = get_method_node(updated_node, "__init__")
         overload_init = init_node.with_changes(decorators=[OVERLOAD_DECORATOR])
 
         overloads: list[cst.FunctionDef] = []
 
         # For each model, create two overloads, depending on the `null` value:
         for model in self.django_models:
+            # TODO This needs a proper Django Context object, instead of these utilities
+            model_name = get_model_alias(model, self.django_models) or model.__name__
+            duplicate = is_duplicate_model(model.__name__, self.django_models)
+
             for nullable in (True, False):  # Order matters!
                 # sets `self: FieldName[<set_type>, <get_type>]`
-                self_param = _get_param(overload_init, "self")
+                self_param = get_param(overload_init, "self")
                 overload = overload_init.with_deep_changes(
                     old_node=self_param,
-                    annotation=_build_self_annotation(field_cls_name, model.__name__, nullable),
+                    annotation=_build_self_annotation(field_cls_name, model_name, nullable),
                 )
 
                 # sets `to: Literal["model_name", "app_label.model_name"]`
-                to_param = _get_param(overload, "to")
+                to_param = get_param(overload, "to")
                 overload = overload.with_deep_changes(
                     old_node=to_param,
-                    annotation=_build_to_annotation(model),
+                    annotation=_build_to_annotation(model, duplicate),
                 )
 
                 # sets `null: Literal[True/False]` (with the default removed accordingly)
-                null_param = _get_kw_param(overload, "null")
+                null_param = get_kw_param(overload, "null")
                 overload = overload.with_deep_changes(
                     old_node=null_param,
                     annotation=cst.Annotation(
@@ -194,7 +208,7 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
         # Now, handle the last overload, matching against a real model type:
 
         # sets `to: type[_ModelT]`, the type variable will be used to annotate `self` as well
-        to_param = _get_param(overload_init, "to")
+        to_param = get_param(overload_init, "to")
         model_overload = overload_init.with_deep_changes(
             old_node=to_param,
             annotation=cst.Annotation(
@@ -206,13 +220,13 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
         for nullable in (True, False):  # Order matters!
             # sets `self: FieldName[<set_type>, <get_type>]`
-            self_param = _get_param(model_overload, "self")
+            self_param = get_param(model_overload, "self")
             model_overload_ = model_overload.with_deep_changes(
                 old_node=self_param, annotation=_build_self_annotation(field_cls_name, "_ModelT", nullable)
             )
 
             # sets `null: Literal[True/False]` (with the default removed accordingly)
-            null_param = _get_kw_param(model_overload, "null")
+            null_param = get_kw_param(model_overload_, "null")
             model_overload_ = model_overload_.with_deep_changes(
                 old_node=null_param,
                 annotation=cst.Annotation(
@@ -227,7 +241,7 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
             overloads.append(model_overload_)
 
         # Temp workaround to have autocompletion working, this overload shouldn't be used as a match by type checkers
-        # to_param = _get_param(overload_init, "to")
+        # to_param = get_param(overload_init, "to")
         # literal_completion_overload = overload_init.with_deep_changes(
         #     old_node=to_param,
         #     annotation=cst.Annotation(
@@ -268,31 +282,19 @@ def _build_self_annotation(field_cls_name: str, model_name: str, nullable: bool)
     )
 
 
-def _build_to_annotation(model: ModelType) -> cst.Annotation:
+def _build_to_annotation(model: ModelType, duplicate: bool = False) -> cst.Annotation:
     """Builds the `to` annotation of foreign fields.
 
     This will result in a `Literal` with two string values, the model name and the dotted app label and model name.
+    If `duplicate` is set to `True`, only the second literal value will be set.
     """
+    slice = [cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model._meta.app_label}.{model.__name__}"')))]
+    if not duplicate:
+        slice.insert(0, cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model.__name__}"'))))
+
     return cst.Annotation(
         annotation=cst.Subscript(
             value=cst.Name("Literal"),
-            slice=[
-                cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model.__name__}"'))),
-                cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model._meta.app_label}.{model.__name__}"'))),
-            ],
+            slice=slice,
         )
     )
-
-
-def _get_init_node(node: cst.ClassDef) -> cst.FunctionDef:
-    return helpers.ensure_type(
-        next(node for node in node.body.body if m.matches(node, INIT_METHOD_MATCHER)), cst.FunctionDef
-    )
-
-
-def _get_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
-    return next(param for param in node.params.params if param.name.value == param_name)
-
-
-def _get_kw_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
-    return next(param for param in node.params.kwonly_params if param.name.value == param_name)
