@@ -8,7 +8,8 @@ from libcst.codemod.visitors import AddImportsVisitor
 
 from django_autotyping.typing import ModelType
 
-from .utils import get_method_node, get_model_alias, get_model_imports, get_param
+from ..django_context import DjangoStubbingContext
+from .utils import get_method_node, get_param
 
 OVERLOAD_DECORATOR = cst.Decorator(decorator=cst.Name("overload"))
 
@@ -31,13 +32,11 @@ class QueryLookupsOverloadCodemod(VisitorBasedCodemodCommand):
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.django_models = cast(list[ModelType], context.scratch["django_models"])
-
-        model_imports = get_model_imports(self.django_models)
+        self.django_context = cast(DjangoStubbingContext, context.scratch["django_context"])
 
         # TODO LibCST should support adding imports from `ImportItem` objects
         imports = AddImportsVisitor._get_imports_from_context(context)
-        imports.extend(model_imports)
+        imports.extend(self.django_context.model_imports)
         self.context.scratch[AddImportsVisitor.CONTEXT_KEY] = imports
 
         # Even though these are most likely included, we import them for safety:
@@ -61,7 +60,7 @@ class QueryLookupsOverloadCodemod(VisitorBasedCodemodCommand):
         """
         body = list(updated_node.body)
 
-        model_typed_dicts = _build_model_kwargs(self.django_models)
+        model_typed_dicts = _build_model_kwargs(self.django_context.models)
 
         t_type_var = next(node for node in body if m.matches(node, T_TYPE_VAR_MATCHER))
         index = body.index(t_type_var) + 1
@@ -82,9 +81,8 @@ class QueryLookupsOverloadCodemod(VisitorBasedCodemodCommand):
 
         overloads: list[cst.FunctionDef] = []
 
-        for model in self.django_models:
-            # TODO This needs a proper Django Context object, instead of these utilities
-            model_name = get_model_alias(model, self.django_models) or model.__name__
+        for model in self.django_context.models:
+            model_name = self.django_context.get_model_name(model)
 
             # sets `self: ManyToManyField[model_name, _Through]`
             self_param = get_param(overload_get, "self")

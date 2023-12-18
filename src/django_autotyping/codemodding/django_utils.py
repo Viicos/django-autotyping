@@ -51,7 +51,7 @@ def initialize_django(settings_module: str, app_path: Path) -> tuple[Apps, LazyS
     return apps, settings
 
 
-class DjangoContext:
+class DjangoCodemodContext:
     def __init__(self, django_settings_module: str, root_dir: Path, assume_class_getitem: bool) -> None:
         self.django_settings_module = django_settings_module
         self.root_dir = root_dir

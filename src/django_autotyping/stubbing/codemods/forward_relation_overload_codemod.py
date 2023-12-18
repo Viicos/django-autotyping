@@ -8,7 +8,9 @@ from libcst.codemod.visitors import AddImportsVisitor
 
 from django_autotyping.typing import ModelType
 
-from .utils import get_kw_param, get_method_node, get_model_alias, get_model_imports, get_param, is_duplicate_model
+from ..django_context import DjangoStubbingContext
+from ..settings import StubSettings
+from .utils import get_kw_param, get_method_node, get_param
 
 OVERLOAD_DECORATOR = cst.Decorator(decorator=cst.Name("overload"))
 
@@ -59,13 +61,12 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.django_models = cast(list[ModelType], context.scratch["django_models"])
-
-        model_imports = get_model_imports(self.django_models)
+        self.django_context = cast(DjangoStubbingContext, context.scratch["django_context"])
+        self.stub_settings = cast(StubSettings, context.scratch["stub_settings"])
 
         # TODO LibCST should support adding imports from `ImportItem` objects
         imports = AddImportsVisitor._get_imports_from_context(context)
-        imports.extend(model_imports)
+        imports.extend(self.django_context.model_imports)
         self.context.scratch[AddImportsVisitor.CONTEXT_KEY] = imports
 
         # Even though these are most likely included, we import them for safety:
@@ -73,6 +74,7 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
             ("typing", "Literal"),
             ("typing", "TypeVar"),
             ("typing", "overload"),
+            ("django.db.models.expressions", "Combinable"),
         ]
 
         for added_import in added_imports:
@@ -108,10 +110,11 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
         overloads: list[cst.FunctionDef] = []
 
-        for model in self.django_models:
-            # TODO This needs a proper Django Context object, instead of these utilities
-            model_name = get_model_alias(model, self.django_models) or model.__name__
-            duplicate = is_duplicate_model(model.__name__, self.django_models)
+        for model in self.django_context.models:
+            model_name = self.django_context.get_model_name(model)
+            allow_plain_model_name = (
+                self.stub_settings.allow_plain_model_references and not self.django_context.is_duplicate(model)
+            )
 
             # sets `self: ManyToManyField[model_name, _Through]`
             self_param = get_param(overload_init, "self")
@@ -127,7 +130,7 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
             to_param = get_param(overload, "to")
             overload = overload.with_deep_changes(
                 old_node=to_param,
-                annotation=_build_to_annotation(model, duplicate),
+                annotation=_build_to_annotation(model, allow_plain_model_name),
             )
 
             overloads.append(overload)
@@ -170,24 +173,27 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
         overloads: list[cst.FunctionDef] = []
 
         # For each model, create two overloads, depending on the `null` value:
-        for model in self.django_models:
-            # TODO This needs a proper Django Context object, instead of these utilities
-            model_name = get_model_alias(model, self.django_models) or model.__name__
-            duplicate = is_duplicate_model(model.__name__, self.django_models)
+        for model in self.django_context.models:
+            model_name = self.django_context.get_model_name(model)
+            allow_plain_model_name = (
+                self.stub_settings.allow_plain_model_references and not self.django_context.is_duplicate(model)
+            )
 
             for nullable in (True, False):  # Order matters!
                 # sets `self: FieldName[<set_type>, <get_type>]`
                 self_param = get_param(overload_init, "self")
                 overload = overload_init.with_deep_changes(
                     old_node=self_param,
-                    annotation=_build_self_annotation(field_cls_name, model_name, nullable),
+                    annotation=_build_self_annotation(
+                        field_cls_name, model_name, nullable, self.stub_settings.allow_none_set_type
+                    ),
                 )
 
                 # sets `to: Literal["model_name", "app_label.model_name"]`
                 to_param = get_param(overload, "to")
                 overload = overload.with_deep_changes(
                     old_node=to_param,
-                    annotation=_build_to_annotation(model, duplicate),
+                    annotation=_build_to_annotation(model, allow_plain_model_name),
                 )
 
                 # sets `null: Literal[True/False]` (with the default removed accordingly)
@@ -222,7 +228,10 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
             # sets `self: FieldName[<set_type>, <get_type>]`
             self_param = get_param(model_overload, "self")
             model_overload_ = model_overload.with_deep_changes(
-                old_node=self_param, annotation=_build_self_annotation(field_cls_name, "_ModelT", nullable)
+                old_node=self_param,
+                annotation=_build_self_annotation(
+                    field_cls_name, "_ModelT", nullable, self.stub_settings.allow_none_set_type
+                ),
             )
 
             # sets `null: Literal[True/False]` (with the default removed accordingly)
@@ -267,7 +276,9 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
         return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
 
 
-def _build_self_annotation(field_cls_name: str, model_name: str, nullable: bool) -> cst.Annotation:
+def _build_self_annotation(
+    field_cls_name: str, model_name: str, nullable: bool, allow_none_set_type: bool
+) -> cst.Annotation:
     """Builds the `self` annotation of foreign fields.
 
     With `field_cls_name="ForeignKey"`, `model_name="MyModel"` and `nullable=False`, the following is produced:
@@ -276,20 +287,19 @@ def _build_self_annotation(field_cls_name: str, model_name: str, nullable: bool)
 
     (Even if not nullable, the `__set__` type can still be `None`. Having a foreign instance is only enforced on save).
     """
-    none_part = " | None" if nullable else ""
-    return cst.Annotation(
-        annotation=helpers.parse_template_expression(f"{field_cls_name}[{model_name} | None, {model_name}{none_part}]")
-    )
+    set_type = f"{model_name} | Combinable | None" if allow_none_set_type else f"{model_name} | Combinable"
+    get_type = f"{model_name} | None" if nullable else model_name
+    return cst.Annotation(annotation=helpers.parse_template_expression(f"{field_cls_name}[{set_type}, {get_type}]"))
 
 
-def _build_to_annotation(model: ModelType, duplicate: bool = False) -> cst.Annotation:
+def _build_to_annotation(model: ModelType, allow_plain_model_name: bool) -> cst.Annotation:
     """Builds the `to` annotation of foreign fields.
 
     This will result in a `Literal` with two string values, the model name and the dotted app label and model name.
-    If `duplicate` is set to `True`, only the second literal value will be set.
+    If `allow_plain_model_name` is set to `False`, only the second literal value will be set.
     """
     slice = [cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model._meta.app_label}.{model.__name__}"')))]
-    if not duplicate:
+    if allow_plain_model_name:
         slice.insert(0, cst.SubscriptElement(cst.Index(cst.SimpleString(f'"{model.__name__}"'))))
 
     return cst.Annotation(

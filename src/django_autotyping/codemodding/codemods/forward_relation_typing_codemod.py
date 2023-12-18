@@ -11,7 +11,7 @@ from libcst.codemod.visitors import AddImportsVisitor
 from libcst.metadata import ScopeProvider
 from libcst.metadata.scope_provider import ClassScope
 
-from ..django_utils import DjangoContext
+from ..django_utils import DjangoCodemodContext
 from ..models import ModelInfo
 
 ASSIGN_FOREIGN_FIELD_MATCHER = m.Assign(
@@ -69,7 +69,7 @@ class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.django_context = cast(DjangoContext, context.scratch["django_context"])
+        self.django_context = cast(DjangoCodemodContext, context.scratch["django_context"])
         self.model_infos = [
             model_info
             for model_info in self.django_context.model_infos

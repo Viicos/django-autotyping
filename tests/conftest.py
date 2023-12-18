@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from django_autotyping.codemodding.django_utils import DjangoContext
+from django_autotyping.codemodding.django_utils import DjangoCodemodContext
 
 
 @pytest.fixture(scope="session")
-def sampleproject_context() -> DjangoContext:
-    return DjangoContext("sampleproject.settings", Path(__file__).parent / "sampleproject", False)
+def sampleproject_context() -> DjangoCodemodContext:
+    return DjangoCodemodContext("sampleproject.settings", Path(__file__).parent / "sampleproject", False)
