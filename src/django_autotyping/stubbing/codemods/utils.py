@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from textwrap import indent
 
 import libcst as cst
 from libcst import helpers
@@ -25,8 +24,8 @@ def get_kw_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
     return next(param for param in node.params.kwonly_params if param.name.value == param_name)
 
 
-def _indent(string: str):
-    return indent(string, prefix="    ", predicate=lambda line: not string.startswith(line))
+def _indent(string: str) -> str:
+    return string.replace("\n", "\n    ")
 
 
 @dataclass
@@ -51,7 +50,7 @@ class TypedDictField:
             raise ValueError("`required` and `not_required` can't be set together.")
 
 
-def build_typed_dict(name: str, total: bool, fields: list[TypedDictField]) -> cst.ClassDef:
+def build_typed_dict(name: str, fields: list[TypedDictField], total: bool = True) -> cst.ClassDef:
     body: list[cst.SimpleStatementLine] = []
     for field in fields:
         if field.required:
@@ -61,10 +60,14 @@ def build_typed_dict(name: str, total: bool, fields: list[TypedDictField]) -> cs
         else:
             annotation = field.annotation
 
-        body.append(helpers.parse_template_statement(annotation))
+        ann_statement = helpers.parse_template_statement(f"{field.name}: {annotation}")
+        if fields.index(field) != 0:
+            ann_statement = ann_statement.with_changes(leading_lines=[cst.EmptyLine()])
+        body.append(ann_statement)
 
         if field.docstring:
-            body.append(cst.SimpleStatementLine(body=[cst.Expr(cst.SimpleString(_indent(field.docstring)))]))
+            docstring = f'"""{_indent(field.docstring)}"""'
+            body.append(cst.SimpleStatementLine(body=[cst.Expr(cst.SimpleString(docstring))]))
 
     return cst.ClassDef(
         name=cst.Name(name),
@@ -75,7 +78,7 @@ def build_typed_dict(name: str, total: bool, fields: list[TypedDictField]) -> cs
                 value=cst.Name("False"),
             )
         ]
-        if total
+        if not total
         else [],
-        body=body,
+        body=cst.IndentedBlock(body),
     )

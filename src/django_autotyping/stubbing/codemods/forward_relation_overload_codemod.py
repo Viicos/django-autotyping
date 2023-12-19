@@ -1,4 +1,6 @@
-from typing import cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 
 import libcst as cst
 import libcst.matchers as m
@@ -8,9 +10,11 @@ from libcst.codemod.visitors import AddImportsVisitor
 
 from django_autotyping.typing import ModelType
 
-from ..django_context import DjangoStubbingContext
-from ..settings import StubSettings
 from .utils import get_kw_param, get_method_node, get_param
+
+if TYPE_CHECKING:
+    from ..django_context import DjangoStubbingContext
+    from ..settings import StubSettings
 
 OVERLOAD_DECORATOR = cst.Decorator(decorator=cst.Name("overload"))
 
@@ -61,8 +65,8 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.django_context = cast(DjangoStubbingContext, context.scratch["django_context"])
-        self.stub_settings = cast(StubSettings, context.scratch["stub_settings"])
+        self.django_context = cast("DjangoStubbingContext", context.scratch["django_context"])
+        self.stub_settings = cast("StubSettings", context.scratch["stub_settings"])
 
         # TODO LibCST should support adding imports from `ImportItem` objects
         imports = AddImportsVisitor._get_imports_from_context(context)
@@ -287,7 +291,7 @@ def _build_self_annotation(
 
     (Even if not nullable, the `__set__` type can still be `None`. Having a foreign instance is only enforced on save).
     """
-    set_type = f"{model_name} | Combinable | None" if allow_none_set_type else f"{model_name} | Combinable"
+    set_type = f"{model_name} | Combinable | None" if allow_none_set_type or nullable else f"{model_name} | Combinable"
     get_type = f"{model_name} | None" if nullable else model_name
     return cst.Annotation(annotation=helpers.parse_template_expression(f"{field_cls_name}[{set_type}, {get_type}]"))
 

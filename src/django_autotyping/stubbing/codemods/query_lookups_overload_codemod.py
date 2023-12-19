@@ -1,4 +1,6 @@
-from typing import cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 
 import libcst as cst
 import libcst.matchers as m
@@ -8,8 +10,10 @@ from libcst.codemod.visitors import AddImportsVisitor
 
 from django_autotyping.typing import ModelType
 
-from ..django_context import DjangoStubbingContext
 from .utils import get_method_node, get_param
+
+if TYPE_CHECKING:
+    from ..django_context import DjangoStubbingContext
 
 OVERLOAD_DECORATOR = cst.Decorator(decorator=cst.Name("overload"))
 
@@ -32,7 +36,7 @@ class QueryLookupsOverloadCodemod(VisitorBasedCodemodCommand):
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.django_context = cast(DjangoStubbingContext, context.scratch["django_context"])
+        self.django_context = cast("DjangoStubbingContext", context.scratch["django_context"])
 
         # TODO LibCST should support adding imports from `ImportItem` objects
         imports = AddImportsVisitor._get_imports_from_context(context)

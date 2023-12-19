@@ -17,6 +17,8 @@ from .settings import StubSettings
 def post_migrate_receiver(sender: AppConfig, **kwargs: Any):
     stub_settings = StubSettings.from_django_settings(settings)
 
+    create_stubs(stub_settings.stubs_dir)
+
     codemods = gather_codemods(stub_settings.disabled_rules)
 
     apps: Apps = kwargs["apps"]
