@@ -10,13 +10,13 @@ from libcst.codemod.visitors import AddImportsVisitor
 
 from django_autotyping.typing import ModelType
 
+from .constants import OVERLOAD_DECORATOR
 from .utils import get_kw_param, get_method_node, get_param
 
 if TYPE_CHECKING:
     from ..django_context import DjangoStubbingContext
     from ..settings import StubSettings
 
-OVERLOAD_DECORATOR = cst.Decorator(decorator=cst.Name("overload"))
 
 MODEL_T_TYPE_VAR = helpers.parse_template_statement('_ModelT = TypeVar("_ModelT", bound=Model)')
 """A statement assigning `_ModelT = TypeVar("_ModelT", bound=Model)`."""
@@ -31,9 +31,6 @@ RELATED_CLASS_DEF_MATCHER = m.ClassDef(
 MANY_TO_MANY_CLASS_DEF_MATCHER = m.ClassDef(name=m.Name("ManyToManyField"))
 """Matches the `ManyToManyField` class definition."""
 
-
-INIT_METHOD_MATCHER = m.FunctionDef(name=m.Name("__init__"))
-"""Matches all `__init__` methods."""
 
 GET_TYPE_VAR_MATCHER = m.SimpleStatementLine(body=[m.Assign(targets=[m.AssignTarget(m.Name("_GT"))])])
 """Matches the definition of the `_GT` type variable."""
