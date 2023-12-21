@@ -147,7 +147,7 @@ This codemod makes use of the [PEP 692](https://peps.python.org/pep-0692/). If y
 
 ## Add type hints to `Apps.get_model` (`DJAS010`)
 
-A codemod that will add overload to the `Apps.get_model` method, supporting both use cases:
+A codemod that will add overloads to the `Apps.get_model` method, supporting both use cases:
 
 ```python
 reveal_type(apps.get_model("app_name.ModelName"))  # Revealed type is type[ModelName]
