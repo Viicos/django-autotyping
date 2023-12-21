@@ -58,7 +58,7 @@ class GetModelOverloadCodemod(StubVisitorBasedCodemod):
                 # sets `model_name: Literal[...]`
                 model_name_param = get_param(overload, "model_name")
                 if use_shortcut:
-                    annotation = helpers.parse_template_expression(f"Literal[None]")
+                    annotation = helpers.parse_template_expression("Literal[None]")
                 else:
                     annotation = helpers.parse_template_expression(f'Literal["{model.__name__}"]')
 
