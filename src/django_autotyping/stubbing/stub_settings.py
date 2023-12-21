@@ -35,8 +35,8 @@ class StubSettings:
     it is generally a bad practice to do so. However, it might be beneficial to allow `None`
     to be set temporarly.
 
-    This also works for foreign fields, where unlike normal fields, the Django descriptor used
-    only allow model instances and `None` to be set.
+    This also works for foreign fields, where unlike standard fields, the Django descriptor used
+    only allows model instances and `None` to be set.
 
     Affected rules: `DJAS001`.
     """
@@ -45,4 +45,4 @@ class StubSettings:
     def from_django_settings(cls, settings: LazySettings):
         autotyping_settings: dict[str, Any] = getattr(settings, "AUTOTYPING", {})
 
-        return cls(**{k.upper(): v for k, v in autotyping_settings.items()})
+        return cls(**{k.lower(): v for k, v in autotyping_settings.items()})

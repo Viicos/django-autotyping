@@ -10,6 +10,15 @@ class DjangoStubbingContext:
     def __init__(self, apps: Apps):
         self.apps = apps
 
+    @staticmethod
+    def _get_model_alias(model: ModelType) -> str:
+        """Return an alias of the model, by converting the app label to PascalCase and joining
+        the app label to the model name.
+        """
+        app_label = model._meta.app_label.title()
+        app_label = re.sub("([0-9A-Za-z])_(?=[0-9A-Z])", lambda m: m.group(1), app_label)
+        return f"{app_label}{model.__name__}"
+
     @property
     def models(self) -> list[ModelType]:
         """All the defined models."""
@@ -30,14 +39,6 @@ class DjangoStubbingContext:
             )
             for model in self.models
         ]
-
-    def _get_model_alias(model: ModelType) -> str:
-        """Return an alias of the model, by converting the app label to PascalCase and joining
-        the app label to the model name.
-        """
-        app_label = model._meta.app_label.title()
-        app_label = re.sub("([0-9A-Za-z])_(?=[0-9A-Z])", lambda m: m.group(1), app_label)
-        return f"{app_label}{model.__name__}"
 
     def is_duplicate(self, model: ModelType) -> bool:
         """Whether the model has a duplicate name with another model in a different app."""

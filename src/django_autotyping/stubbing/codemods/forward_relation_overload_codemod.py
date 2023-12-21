@@ -1,22 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
-
 import libcst as cst
 import libcst.matchers as m
 from libcst import helpers
-from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
+from libcst.codemod import CodemodContext
 from libcst.codemod.visitors import AddImportsVisitor
 
 from django_autotyping.typing import ModelType
 
+from .base import StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
 from .utils import get_kw_param, get_method_node, get_param
-
-if TYPE_CHECKING:
-    from ..django_context import DjangoStubbingContext
-    from ..settings import StubSettings
-
 
 MODEL_T_TYPE_VAR = helpers.parse_template_statement('_ModelT = TypeVar("_ModelT", bound=Model)')
 """A statement assigning `_ModelT = TypeVar("_ModelT", bound=Model)`."""
@@ -36,7 +30,7 @@ GET_TYPE_VAR_MATCHER = m.SimpleStatementLine(body=[m.Assign(targets=[m.AssignTar
 """Matches the definition of the `_GT` type variable."""
 
 
-class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
+class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to the `__init__` methods of related fields.
 
     Rule identifier: `DJAS001`.
@@ -62,28 +56,16 @@ class ForwardRelationOverloadCodemod(VisitorBasedCodemodCommand):
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.django_context = cast("DjangoStubbingContext", context.scratch["django_context"])
-        self.stub_settings = cast("StubSettings", context.scratch["stub_settings"])
-
-        # TODO LibCST should support adding imports from `ImportItem` objects
-        imports = AddImportsVisitor._get_imports_from_context(context)
-        imports.extend(self.django_context.model_imports)
-        self.context.scratch[AddImportsVisitor.CONTEXT_KEY] = imports
+        self.add_model_imports()
 
         # Even though these are most likely included, we import them for safety:
-        added_imports = [
-            ("typing", "Literal"),
-            ("typing", "TypeVar"),
-            ("typing", "overload"),
-            ("django.db.models.expressions", "Combinable"),
-        ]
+        self.add_typing_imports(["Literal", "TypeVar", "overload"])
 
-        for added_import in added_imports:
-            AddImportsVisitor.add_needed_import(
-                self.context,
-                module=added_import[0],
-                obj=added_import[1],
-            )
+        AddImportsVisitor.add_needed_import(
+            self.context,
+            module="django.db.models.expressions",
+            obj="Combinable",
+        )
 
     def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
         """Adds a `SimpleStatementLine` to define `_ModelT = TypeVar("_ModelT", bound=Model)`

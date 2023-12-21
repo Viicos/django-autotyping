@@ -11,7 +11,7 @@ from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
 
 from .codemods import gather_codemods
 from .django_context import DjangoStubbingContext
-from .settings import StubSettings
+from .stub_settings import StubSettings
 
 
 def post_migrate_receiver(sender: AppConfig, **kwargs: Any):

@@ -50,7 +50,9 @@ class TypedDictField:
             raise ValueError("`required` and `not_required` can't be set together.")
 
 
-def build_typed_dict(name: str, fields: list[TypedDictField], total: bool = True) -> cst.ClassDef:
+def build_typed_dict(
+    name: str, fields: list[TypedDictField], total: bool = True, leading_line: bool = False
+) -> cst.ClassDef:
     body: list[cst.SimpleStatementLine] = []
     for field in fields:
         if field.required:
@@ -62,7 +64,7 @@ def build_typed_dict(name: str, fields: list[TypedDictField], total: bool = True
 
         ann_statement = helpers.parse_template_statement(f"{field.name}: {annotation}")
         if fields.index(field) != 0:
-            ann_statement = ann_statement.with_changes(leading_lines=[cst.EmptyLine()])
+            ann_statement = ann_statement.with_changes(leading_lines=[cst.EmptyLine(indent=False)])
         body.append(ann_statement)
 
         if field.docstring:
@@ -71,6 +73,7 @@ def build_typed_dict(name: str, fields: list[TypedDictField], total: bool = True
 
     return cst.ClassDef(
         name=cst.Name(name),
+        bases=[cst.Arg(cst.Name("TypedDict"))],
         keywords=[
             cst.Arg(
                 keyword=cst.Name("total"),
@@ -81,4 +84,5 @@ def build_typed_dict(name: str, fields: list[TypedDictField], total: bool = True
         if not total
         else [],
         body=cst.IndentedBlock(body),
+        leading_lines=[cst.EmptyLine(indent=False)] if leading_line else [],
     )
