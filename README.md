@@ -145,6 +145,24 @@ This codemod makes use of the [PEP 692](https://peps.python.org/pep-0692/). If y
 > [!WARNING]\
 > This rule is still in progress, and waiting on some Python typing features to land.
 
+## Add type hints to `Apps.get_model` (`DJAS010`)
+
+A codemod that will add overloads to the `Apps.get_model` method, supporting both use cases:
+
+```python
+reveal_type(apps.get_model("app_name.ModelName"))  # Revealed type is type[ModelName]
+reveal_type(apps.get_model("app_name", "ModelName"))  # Revealed type is type[ModelName]
+```
+
+<details>
+
+<summary>Technical details</summary>
+
+Stub files affected:
+- `django-stubs/apps/registry.pyi`
+
+</details>
+
 # Linter - automatic codemods
 
 `django-autotyping` can also be used as a CLI program. Running the CLI will apply explicit annotations to your code.
