@@ -73,17 +73,13 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
 
                 # sets `self: BaseManager/_QuerySet[model_name]`
                 if cls_name == "BaseManager":
-                    annotation = cst.Annotation(
-                        annotation=helpers.parse_template_expression(f"{cls_name}[{model_name}]")
-                    )
+                    annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}]")
                 else:
-                    annotation = cst.Annotation(
-                        annotation=helpers.parse_template_expression(f"{cls_name}[{model_name}, _Row]")
-                    )
+                    annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}, _Row]")
                 self_param = get_param(overload_create, "self")
                 overload = overload_create.with_deep_changes(
                     old_node=self_param,
-                    annotation=annotation,
+                    annotation=cst.Annotation(annotation),
                 )
 
                 overload = overload.with_deep_changes(
