@@ -2,7 +2,10 @@
 
 Automatically add type hints for Django powered applications.
 
-To understand the purpose of this library, you can refer to [this article](https://viicos.github.io/posts/an-alternative-to-the-django-mypy-plugin/).
+`django-autotyping` generates custom [type stubs](https://typing.readthedocs.io/en/latest/source/stubs.html) based on your current Django application, enhancing your development experience
+by providing auto-completions and accurate type checking.
+
+To understand the purpose of why and how, you can refer to [this article](https://viicos.github.io/posts/an-alternative-to-the-django-mypy-plugin/).
 
 `django-autotyping` is built with [LibCST](https://github.com/Instagram/LibCST/).
 
@@ -11,7 +14,8 @@ To understand the purpose of this library, you can refer to [this article](https
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 > [!WARNING]\
-> This project is still work in progress.
+> This project is still work in progress. It is meant to work with [`django-stubs`](https://github.com/typeddjango/django-stubs), but some improvements and changes are probably going to be
+> implemented in the stub definitions, and could potentially require some changes to the generated stubs.
 
 # Installation
 
@@ -23,28 +27,84 @@ pip install django-autotyping
 
 # Usage
 
-`django-autotyping` is usable in two ways:
-- As a Django development application.
-- As a linter that will automatically apply changes to your code.
+`django-autotyping` can achieve the following:
+- Generate dynamic stubs depending on your application. For this use case, it is recommended
+to use it as a Django development application (see [configuration](#configuration)).
+- When dynamic stubs are not enough, explicit type hints can be automatically added to your source code.
 
-# Django application - dynamic stub files
+# Configuration
 
-`django-autotyping` can generate custom dynamic stubs for your application:
-- Add `django_autotyping` to your `INSTALLED_APPS`.
-- In your configuration, set `AUTOTYPING_STUBS_DIR` to a directory where local stubs should live. By default, `pyright`
-looks for the directory `typings/`. For `mypy`, you will have to configure the [`mypy_path`](https://mypy.readthedocs.io/en/stable/config_file.html#confval-mypy_path) value (or use the `MYPY_PATH` environment variable).
-- Optionally, you can disable specific rules by setting `AUTOTYPING_DISABLED_RULES`.
-- Install `django-stubs` into your environment.
+As any Django application, you will need to add `django_autotyping` to your `INSTALLED_APPS` (preferably in your development or local settings, if you already have them separated).
 
-Stubs will be generated when the [`post_migrate`](https://docs.djangoproject.com/en/dev/ref/signals/#post-migrate) signal is emitted (you can still run the [`migrate`](https://docs.djangoproject.com/en/dev/ref/django-admin/#migrate) command even if no migrations are to be applied).
+The application is configurable with the `AUTOTYPING` dict:
 
-## Available rules
+```python
+AUTOTYPING = {
+    "STUBS_DIR": Path(BASE_DIR, "typings"),
+}
+```
 
-### Add type hints to related fields (`DJAS001`)
+The only required configuration value is `STUBS_DIR`, a path pointing to your configured local stub directory.
+
+Once installed, the stubs will be generated after each migration (by connecting to the [`post_migrate`](https://docs.djangoproject.com/en/dev/ref/signals/#post-migrate) signal).
+
+## `STUBS_DIR`
+
+**Required.**
+
+A [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path) object pointing to your
+configured local stubs directory, as specified by the [PEP 561](https://peps.python.org/pep-0561/#type-checker-module-resolution-order). Depending on the type checker used, configuration differs:
+- [`pyright`](https://github.com/microsoft/pyright/): will look for the `typings/` directory by default (see [configuration](https://microsoft.github.io/pyright/#/configuration?id=main-configuration-options)).
+- [`mypy`](https://github.com/python/mypy/): configurable via the [`mypy_path`](https://mypy.readthedocs.io/en/stable/config_file.html#confval-mypy_path) value (or use the `MYPY_PATH` environment variable).
+
+## `DISABLED_RULES`
+
+_Default value: empty list._
+
+A list of rule identifiers to be disabled.
+
+## `ALLOW_PLAIN_MODEL_REFERENCES`
+
+_Default value: `True`._
+
+Whether string references in the form of `{model_name}` should be generated in overloads.
+
+If set to `True`, both `{model_name}` and `{model_name}.{app_label}` are allowed
+(unless the model name has a duplicate in a different app).
+
+_Affected rules: `DJAS001`._
+
+## `ALLOW_NONE_SET_TYPE`
+
+_Default value: `False`._
+
+Whether to allow having the `__set__` type variable set to `None`.
+
+While Django allows setting most model instance fields to any value (before saving),
+it is generally a bad practice to do so. However, it might be beneficial to allow `None`
+to be set temporarly.
+
+This also works for foreign fields, where unlike standard fields, the Django descriptor used
+only allows model instances and `None` to be set.
+
+_Affected rules: `DJAS001`._
+
+# Available rules
+
+## Add type hints to related fields (`DJAS001`)
 
 A codemod that will add overloads to the `__init__` methods of related fields.
 
-This codemod is meant to be applied on the `django-stubs/db/models/fields/related.pyi` stub file.
+This will provide auto-completion (VSCode users, see this [issue](https://github.com/microsoft/pylance-release/issues/4428)) when using `ForeignKey`, `OneToOneField` and `ManyToManyField` with string references to a model, and accurate type checking when accessing the field attribute from a model instance.
+
+<details>
+
+<summary>Technical details</summary>
+
+Stub files affected:
+- `django-stubs/db/models/fields/related.pyi`
+
+The following overloads will be created:
 
 ```python
 class ForeignKey(ForeignObject[_ST, _GT]):
@@ -60,16 +120,38 @@ class ForeignKey(ForeignObject[_ST, _GT]):
         ...
     ) -> None: ...
 ```
+</details>
 
-### Add type hints to `Manager` and `QuerySet` methods (`DJAS002`)
+## Add type hints to the `create`/`acreate` method of managers and querysets (`DJAS002`)
+
+A codemod that will add overloads to the `create`/`acreate` methods of managers and querysets.
+
+This will provide auto-completion when using `Model.objects.create`.
+
+<details>
+
+<summary>Technical details</summary>
+
+Stub files affected:
+- `django-stubs/db/models/manager.pyi`
+- `django-stubs/db/models/query.pyi`
+
+This codemod makes use of the [PEP 692](https://peps.python.org/pep-0692/). If your type checker/LSP supports it, documentation is provided for each field if `help_text` was set.
+
+</details>
+
+## Add type hints to the query methods of managers and querysets (`DJAS003`)
 
 > [!WARNING]\
 > This rule is still in progress, and waiting on some Python typing features to land.
 
 # Linter - automatic codemods
 
+`django-autotyping` can also be used as a CLI program. Running the CLI will apply explicit annotations to your code.
 
-`django-autotyping` can be also used as a CLI program. Running the CLI will apply explicit annotations to your code.
+Note that this feature is decoupled from the dynamic stubs generation, as it applies modifications
+to your source code, and it might not be desirable to have these modifications automatically applied. For this reason, it is only usable as a CLI program, and doesn't require the application
+to be added to your `INSTALLED_APPS`.
 
 ```sh
 usage: Add type hints to your models for better auto-completion.
@@ -124,7 +206,7 @@ class Article(models.Model):
 
 > [!NOTE]\
 > As of today, generated type hints will only play well with [`django-types`](https://github.com/sbdchd/django-types). [`django-stubs`](https://github.com/typeddjango/django-stubs) requires a type for both the `__set__` and `__get__` types.
-> Instead, it is recommended to use the corresponding dynamic stub rule (`DJAS001`).
+> Instead, it is recommended to use the corresponding dynamic stub rule (`DJAS001`). This rule might be updated in the future to drop support for `django-types`.
 
 ### Add type hints for reverse relationships (`DJA002`)
 

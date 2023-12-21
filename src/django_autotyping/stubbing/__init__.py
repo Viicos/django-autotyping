@@ -6,33 +6,43 @@ from typing import Any
 import libcst as cst
 from django.apps import AppConfig
 from django.apps.registry import Apps
+from django.conf import settings
 from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
 
-from ..app_settings import AUTOTYPING_DISABLED_RULES, AUTOTYPING_STUBS_DIR
 from .codemods import gather_codemods
+from .django_context import DjangoStubbingContext
+from .stub_settings import StubSettings
 
 
 def post_migrate_receiver(sender: AppConfig, **kwargs: Any):
+    stub_settings = StubSettings.from_django_settings(settings)
+
+    create_stubs(stub_settings.stubs_dir)
+
+    codemods = gather_codemods(stub_settings.disabled_rules)
+
     apps: Apps = kwargs["apps"]
-    codemods = gather_codemods(AUTOTYPING_DISABLED_RULES)
-
-    # TODO depending on the future codemods, we might need to build
-    # a specific Django context instead of passing apps.
-    run_codemods(codemods, AUTOTYPING_STUBS_DIR, apps)
-
-
-def run_codemods(codemods: list[type[VisitorBasedCodemodCommand]], stubs_dir: Path, apps: Apps) -> None:
     # Temp hack: the apps object from the post_migrate signal is a `StatesApp` instance, missing some data we need
     from django.apps import apps
 
+    django_context = DjangoStubbingContext(apps)
+
+    run_codemods(codemods, django_context, stub_settings)
+
+
+def run_codemods(
+    codemods: list[type[VisitorBasedCodemodCommand]],
+    django_context: DjangoStubbingContext,
+    stub_settings: StubSettings,
+) -> None:
     for codemod in codemods:
-        context = CodemodContext(scratch={"django_models": apps.get_models()})
+        context = CodemodContext(scratch={"django_context": django_context, "stub_settings": stub_settings})
 
         transformer = codemod(context)
 
         for stub_file in codemod.STUB_FILES:  # TODO typechecking
-            source_file = _get_django_stubs_dir() / stub_file
-            target_file = stubs_dir / "django-stubs" / stub_file
+            source_file = _get_django_stubs_dir() / stub_file  # TODO should be an argument to this func
+            target_file = stub_settings.stubs_dir / "django-stubs" / stub_file
 
             input_code = source_file.read_text(encoding="utf-8")
             input_module = cst.parse_module(input_code)

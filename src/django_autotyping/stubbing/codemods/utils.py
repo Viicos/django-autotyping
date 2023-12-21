@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import Collection
+from dataclasses import dataclass
 
 import libcst as cst
 from libcst import helpers
 from libcst import matchers as m
-from libcst.codemod.visitors import ImportItem
-
-from django_autotyping.typing import ModelType
 
 
 def get_method_node(class_node: cst.ClassDef, method_name: str) -> cst.FunctionDef:
@@ -17,35 +14,75 @@ def get_method_node(class_node: cst.ClassDef, method_name: str) -> cst.FunctionD
     )
 
 
-def is_duplicate_model(model_name: str, models: Collection[ModelType]) -> bool:
-    return len([m for m in models if m.__name__ == model_name]) >= 2  # noqa: PLR2004
-
-
-def get_model_alias(model: ModelType, models: Collection[ModelType]) -> str | None:
-    # TODO Should be a snake_case to CamelCase converter
-    return (
-        f"{model._meta.app_label.capitalize()}{model.__name__}" if is_duplicate_model(model.__name__, models) else None
-    )
-
-
-def get_model_imports(models: Collection[ModelType]) -> list[ImportItem]:
-    """Get a list of imports for the specified models.
-
-    If one of the model's name clashes with another one, the import is aliased.
-    """
-    return [
-        ImportItem(
-            module_name=model._meta.app_config.models_module.__name__,
-            obj_name=model.__name__,
-            alias=get_model_alias(model, models),
-        )
-        for model in models
-    ]
-
-
 def get_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
+    """Get the `Param` node matching `param_name`."""
     return next(param for param in node.params.params if param.name.value == param_name)
 
 
 def get_kw_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
+    """Get the keyword only `Param` node matching `param_name`."""
     return next(param for param in node.params.kwonly_params if param.name.value == param_name)
+
+
+def _indent(string: str) -> str:
+    return string.replace("\n", "\n    ")
+
+
+@dataclass
+class TypedDictField:
+    name: str
+    """The attribute name."""
+
+    annotation: str
+    """The annotation of the field."""
+
+    docstring: str | None = None
+    """The docstring of the field."""
+
+    required: bool = False
+    """Whether the field should be marked as `Required`."""
+
+    not_required: bool = False
+    """Whether the field should be marked as `NotRequired`."""
+
+    def __post_init__(self):
+        if self.required and self.not_required:
+            raise ValueError("`required` and `not_required` can't be set together.")
+
+
+def build_typed_dict(
+    name: str, fields: list[TypedDictField], total: bool = True, leading_line: bool = False
+) -> cst.ClassDef:
+    body: list[cst.SimpleStatementLine] = []
+    for field in fields:
+        if field.required:
+            annotation = f"Required[{field.annotation}]"
+        elif field.not_required:
+            annotation = f"NotRequired[{field.annotation}]"
+        else:
+            annotation = field.annotation
+
+        ann_statement = helpers.parse_template_statement(f"{field.name}: {annotation}")
+        if fields.index(field) != 0:
+            ann_statement = ann_statement.with_changes(leading_lines=[cst.EmptyLine(indent=False)])
+        body.append(ann_statement)
+
+        if field.docstring:
+            docstring = f'"""{_indent(field.docstring)}"""'
+            body.append(cst.SimpleStatementLine(body=[cst.Expr(cst.SimpleString(docstring))]))
+
+    return cst.ClassDef(
+        name=cst.Name(name),
+        bases=[cst.Arg(cst.Name("TypedDict"))],
+        keywords=[
+            cst.Arg(
+                keyword=cst.Name("total"),
+                equal=cst.AssignEqual(cst.SimpleWhitespace(""), cst.SimpleWhitespace("")),
+                value=cst.Name("False"),
+            )
+        ]
+        if not total
+        else [],
+        body=cst.IndentedBlock(body),
+        leading_lines=[cst.EmptyLine(indent=False)] if leading_line else [],
+    )

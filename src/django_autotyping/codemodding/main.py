@@ -10,7 +10,7 @@ from django.conf import ENVIRONMENT_VARIABLE as DJANGO_SETTINGS_MODULE_ENV_KEY
 from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
 
 from .codemods import RulesT, gather_codemods
-from .django_utils import DjangoContext
+from .django_utils import DjangoCodemodContext
 from .vendoring.monkeytype import MoveImportsToTypeCheckingBlockVisitor, get_newly_imported_items
 
 
@@ -28,7 +28,7 @@ def main(
 
     disabled_rules = disabled_rules or []
 
-    django_context = DjangoContext(settings_module, Path(app_path), assume_class_getitem)
+    django_context = DjangoCodemodContext(settings_module, Path(app_path), assume_class_getitem)
 
     codemods = gather_codemods(disabled_rules)
 
@@ -52,7 +52,7 @@ def main(
 
 def run_codemods(
     codemods: list[type[VisitorBasedCodemodCommand]],
-    django_context: DjangoContext,
+    django_context: DjangoCodemodContext,
     filename: str,
     type_checking_block: bool,
 ) -> str:

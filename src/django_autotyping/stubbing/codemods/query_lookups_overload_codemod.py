@@ -1,16 +1,18 @@
-from typing import cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import libcst as cst
 import libcst.matchers as m
 from libcst import helpers
-from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
-from libcst.codemod.visitors import AddImportsVisitor
+from libcst.codemod import CodemodContext
 
-from django_autotyping.typing import ModelType
+from .base import StubVisitorBasedCodemod
+from .constants import OVERLOAD_DECORATOR
+from .utils import TypedDictField, build_typed_dict, get_method_node, get_param
 
-from .utils import get_method_node, get_model_alias, get_model_imports, get_param
-
-OVERLOAD_DECORATOR = cst.Decorator(decorator=cst.Name("overload"))
+if TYPE_CHECKING:
+    from ..django_context import DjangoStubbingContext
 
 # Matchers:
 
@@ -21,39 +23,20 @@ T_TYPE_VAR_MATCHER = m.SimpleStatementLine(body=[m.Assign(targets=[m.AssignTarge
 """Matches the definition of the `_T` type variable."""
 
 
-class QueryLookupsOverloadCodemod(VisitorBasedCodemodCommand):
+class QueryLookupsOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to the `__init__` methods of related fields.
 
-    Rule identifier: `DJAS002`.
+    Rule identifier: `DJAS003`.
     """
 
     STUB_FILES = {"db/models/manager.pyi"}
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.django_models = cast(list[ModelType], context.scratch["django_models"])
-
-        model_imports = get_model_imports(self.django_models)
-
-        # TODO LibCST should support adding imports from `ImportItem` objects
-        imports = AddImportsVisitor._get_imports_from_context(context)
-        imports.extend(model_imports)
-        self.context.scratch[AddImportsVisitor.CONTEXT_KEY] = imports
+        self.add_model_imports()
 
         # Even though these are most likely included, we import them for safety:
-        added_imports = [
-            ("typing", "TypedDict"),
-            ("typing", "TypeVar"),
-            ("typing", "overload"),
-            ("typing_extensions", "Unpack"),
-        ]
-
-        for added_import in added_imports:
-            AddImportsVisitor.add_needed_import(
-                self.context,
-                module=added_import[0],
-                obj=added_import[1],
-            )
+        self.add_typing_imports(["TypedDict", "TypeVar", "Unpack", "overload"])
 
     def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
         """Adds a `SimpleStatementLine` to define `_ModelT = TypeVar("_ModelT", bound=Model)`
@@ -61,7 +44,7 @@ class QueryLookupsOverloadCodemod(VisitorBasedCodemodCommand):
         """
         body = list(updated_node.body)
 
-        model_typed_dicts = _build_model_kwargs(self.django_models)
+        model_typed_dicts = _build_model_kwargs(self.django_context.models)
 
         t_type_var = next(node for node in body if m.matches(node, T_TYPE_VAR_MATCHER))
         index = body.index(t_type_var) + 1
@@ -82,9 +65,8 @@ class QueryLookupsOverloadCodemod(VisitorBasedCodemodCommand):
 
         overloads: list[cst.FunctionDef] = []
 
-        for model in self.django_models:
-            # TODO This needs a proper Django Context object, instead of these utilities
-            model_name = get_model_alias(model, self.django_models) or model.__name__
+        for model in self.django_context.models:
+            model_name = self.django_context.get_model_name(model)
 
             # sets `self: ManyToManyField[model_name, _Through]`
             self_param = get_param(overload_get, "self")
@@ -109,30 +91,25 @@ class QueryLookupsOverloadCodemod(VisitorBasedCodemodCommand):
         return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
 
 
-def _build_model_kwargs(models: list[ModelType]) -> list[cst.ClassDef]:
+def _build_model_kwargs(django_context: DjangoStubbingContext) -> list[cst.ClassDef]:
+    # TODO This needs to build the available lookups
     class_defs: list[cst.ClassDef] = []
 
-    for model in models:
-        model_name = get_model_alias(model, models) or model.__name__
+    for model in django_context.models:
+        model_name = django_context.get_model_name(model)
         class_defs.append(
-            cst.ClassDef(
-                name=cst.Name(f"{model_name}Kwargs"),
-                bases=[cst.Arg(cst.Name("TypedDict"))],
-                keywords=[
-                    cst.Arg(
-                        keyword=cst.Name("total"),
-                        equal=cst.AssignEqual(cst.SimpleWhitespace(""), cst.SimpleWhitespace("")),
-                        value=cst.Name("False"),
+            build_typed_dict(
+                f"{model_name}CreateKwargs",
+                fields=[
+                    TypedDictField(
+                        field.name,
+                        annotation="Any",
+                        docstring=getattr(field, "help_text", None) or None,
                     )
+                    for field in model._meta._get_fields(reverse=False)
                 ],
-                body=cst.IndentedBlock(
-                    [
-                        cst.SimpleStatementLine(
-                            [cst.AnnAssign(target=cst.Name(field.name), annotation=cst.Annotation(cst.Name("Any")))]
-                        )
-                        for field in model._meta.get_fields()
-                    ]
-                ),
+                total=False,  # TODO find a way to determine which fields are required.
+                leading_line=True,
             )
         )
 
