@@ -29,9 +29,8 @@ pip install django-autotyping
 
 `django-autotyping` can achieve the following:
 - Generate dynamic stubs depending on your application. For this use case, it is recommended
-to use it as a Django development application ([configuration](#configuration)).
-- When dynamic stubs are not enough, it can automatically apply changes to your source code,
-to avoid having to manually add type hints.
+to use it as a Django development application (see [configuration](#configuration)).
+- When dynamic stubs are not enough, explicit type hints can be automatically added to your source code.
 
 # Configuration
 
@@ -51,7 +50,7 @@ Once installed, the stubs will be generated after each migration (by connecting 
 
 ## `STUBS_DIR`
 
-Required.
+**Required.**
 
 A [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path) object pointing to your
 configured local stubs directory, as specified by the [PEP 561](https://peps.python.org/pep-0561/#type-checker-module-resolution-order). Depending on the type checker used, configuration differs:
@@ -60,24 +59,24 @@ configured local stubs directory, as specified by the [PEP 561](https://peps.pyt
 
 ## `DISABLED_RULES`
 
-Default value: empty list.
+_Default value: empty list._
 
 A list of rule identifiers to be disabled.
 
 ## `ALLOW_PLAIN_MODEL_REFERENCES`
 
-Default value: `True`.
+_Default value: `True`._
 
 Whether string references in the form of `{model_name}` should be generated in overloads.
 
 If set to `True`, both `{model_name}` and `{model_name}.{app_label}` are allowed
 (unless the model name has a duplicate in a different app).
 
-Affected rules: `DJAS001`.
+_Affected rules: `DJAS001`._
 
 ## `ALLOW_NONE_SET_TYPE`
 
-Default value: `False`.
+_Default value: `False`._
 
 Whether to allow having the `__set__` type variable set to `None`.
 
@@ -88,7 +87,7 @@ to be set temporarly.
 This also works for foreign fields, where unlike standard fields, the Django descriptor used
 only allows model instances and `None` to be set.
 
-Affected rules: `DJAS001`.
+_Affected rules: `DJAS001`._
 
 # Available rules
 
@@ -121,7 +120,7 @@ class ForeignKey(ForeignObject[_ST, _GT]):
         ...
     ) -> None: ...
 ```
-<details>
+</details>
 
 ## Add type hints to the `create`/`acreate` method of managers and querysets (`DJAS002`)
 
@@ -139,7 +138,7 @@ Stub files affected:
 
 This codemod makes use of the [PEP 692](https://peps.python.org/pep-0692/). If your type checker/LSP supports it, documentation is provided for each field if `help_text` was set.
 
-<details>
+</details>
 
 ## Add type hints to the query methods of managers and querysets (`DJAS003`)
 
