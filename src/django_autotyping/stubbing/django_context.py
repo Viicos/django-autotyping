@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from django.apps.registry import Apps
+from django.db.models import NOT_PROVIDED, DateField, Field
 from libcst.codemod.visitors import ImportItem
 
 from django_autotyping.typing import ModelType
@@ -52,3 +53,18 @@ class DjangoStubbingContext:
         If the model has a duplicate name, an alias is returned.
         """
         return self._get_model_alias(model) if self.is_duplicate(model) else model.__name__
+
+    def is_optional(self, field: Field) -> bool:
+        """Determine if a field requires a value to be provided when instantiating a model.
+
+        In practice, there isn't any reliable way to determine this (even if Django does not provide
+        a default, things could be set at the database level). However, we can make some assumptions
+        regarding the field instance, see https://forum.djangoproject.com/t/26357 for more details.
+        """
+        return (
+            field.null
+            or field.has_default()
+            or getattr(field, "db_default", NOT_PROVIDED) is not NOT_PROVIDED  # No `has_db_default` method :/
+            or isinstance(field, DateField)
+            and (field.auto_now or field.auto_now_add)
+        )

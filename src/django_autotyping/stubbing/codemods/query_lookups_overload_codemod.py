@@ -19,9 +19,6 @@ if TYPE_CHECKING:
 BASE_MANAGER_CLASS_DEF_MATCHER = m.ClassDef(name=m.Name("BaseManager"))
 """Matches the `ManyToManyField` class definition."""
 
-T_TYPE_VAR_MATCHER = m.SimpleStatementLine(body=[m.Assign(targets=[m.AssignTarget(m.Name("_T"))])])
-"""Matches the definition of the `_T` type variable."""
-
 
 class QueryLookupsOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to the `__init__` methods of related fields.
@@ -39,20 +36,9 @@ class QueryLookupsOverloadCodemod(StubVisitorBasedCodemod):
         self.add_typing_imports(["TypedDict", "TypeVar", "Unpack", "overload"])
 
     def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
-        """Adds a `SimpleStatementLine` to define `_ModelT = TypeVar("_ModelT", bound=Model)`
-        following the `_GT` type variable.
-        """
-        body = list(updated_node.body)
-
+        """Add the necessary `TypedDict` definitions after imports."""
         model_typed_dicts = _build_model_kwargs(self.django_context.models)
-
-        t_type_var = next(node for node in body if m.matches(node, T_TYPE_VAR_MATCHER))
-        index = body.index(t_type_var) + 1
-        body[index:index] = model_typed_dicts
-
-        return updated_node.with_changes(
-            body=body,
-        )
+        return self.insert_after_imports(updated_node, model_typed_dicts)
 
     @m.leave(BASE_MANAGER_CLASS_DEF_MATCHER)
     def mutate_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
