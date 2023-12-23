@@ -7,9 +7,9 @@ import libcst as cst
 from django.apps import AppConfig
 from django.apps.registry import Apps
 from django.conf import settings
-from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
+from libcst.codemod import CodemodContext
 
-from .codemods import gather_codemods
+from .codemods import StubVisitorBasedCodemod, gather_codemods
 from .django_context import DjangoStubbingContext
 from .stub_settings import StubSettings
 
@@ -31,16 +31,16 @@ def post_migrate_receiver(sender: AppConfig, **kwargs: Any):
 
 
 def run_codemods(
-    codemods: list[type[VisitorBasedCodemodCommand]],
+    codemods: list[type[StubVisitorBasedCodemod]],
     django_context: DjangoStubbingContext,
     stub_settings: StubSettings,
 ) -> None:
     for codemod in codemods:
-        context = CodemodContext(scratch={"django_context": django_context, "stub_settings": stub_settings})
-
-        transformer = codemod(context)
-
-        for stub_file in codemod.STUB_FILES:  # TODO typechecking
+        for stub_file in codemod.STUB_FILES:
+            context = CodemodContext(
+                filename=stub_file, scratch={"django_context": django_context, "stub_settings": stub_settings}
+            )
+            transformer = codemod(context)
             source_file = _get_django_stubs_dir() / stub_file  # TODO should be an argument to this func
             target_file = stub_settings.stubs_dir / "django-stubs" / stub_file
 

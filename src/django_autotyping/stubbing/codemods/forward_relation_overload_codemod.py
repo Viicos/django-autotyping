@@ -26,10 +26,6 @@ MANY_TO_MANY_CLASS_DEF_MATCHER = m.ClassDef(name=m.Name("ManyToManyField"))
 """Matches the `ManyToManyField` class definition."""
 
 
-GET_TYPE_VAR_MATCHER = m.SimpleStatementLine(body=[m.Assign(targets=[m.AssignTarget(m.Name("_GT"))])])
-"""Matches the definition of the `_GT` type variable."""
-
-
 class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to the `__init__` methods of related fields.
 
@@ -68,19 +64,8 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
         )
 
     def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
-        """Adds a `SimpleStatementLine` to define `_ModelT = TypeVar("_ModelT", bound=Model)`
-        following the `_GT` type variable.
-        """
-        body = list(updated_node.body)
-
-        # TODO return if already exists? Depends if we play it smart and we don't rewrite the whole file each time
-
-        gt_type_var = next(node for node in body if m.matches(node, GET_TYPE_VAR_MATCHER))
-        body.insert(body.index(gt_type_var) + 1, MODEL_T_TYPE_VAR)
-
-        return updated_node.with_changes(
-            body=body,
-        )
+        """Add the necessary `TypeVar` definition after imports."""
+        return self.insert_after_imports(updated_node, [MODEL_T_TYPE_VAR])
 
     @m.leave(MANY_TO_MANY_CLASS_DEF_MATCHER)
     def mutate_ManyToManyField_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:

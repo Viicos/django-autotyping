@@ -41,6 +41,24 @@ class StubSettings:
     Affected rules: `DJAS001`.
     """
 
+    model_fields_optional: bool = True
+    """Whether all model fields should be considered optional when creating model instances.
+
+    This affects the following signatures:
+    - `Manager.create/acreate`
+    - `__init__` methods of models
+
+    A lot can happen behind the scenes when instantiating models. Even if a field doesn't have
+    a default value provided, the database could have triggers implemented that would provide one.
+    This is why, by default, this configuration attribute defaults to `True`. If set to `False`,
+    `django-autotyping` will try its best to determine required fields, namely by checking if:
+    - the field can be `null`
+    - the field has a default or a database default value set
+    - the field is a subclass of `DateField` and has `auto_now` or `auto_now_add` set to `True`.
+
+    Affected rules: `DJAS002`.
+    """
+
     @classmethod
     def from_django_settings(cls, settings: LazySettings):
         autotyping_settings: dict[str, Any] = getattr(settings, "AUTOTYPING", {})

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import libcst as cst
 import libcst.matchers as m
+from django.db.models import Field
 from libcst import helpers
 from libcst.codemod import CodemodContext
 
@@ -16,23 +17,19 @@ if TYPE_CHECKING:
 
 # Matchers:
 
-CLASS_DEF_MATCHER = m.ClassDef(name=m.SaveMatchedNode(m.Name("BaseManager") | m.Name("_QuerSet"), "cls_name"))
+CLASS_DEF_MATCHER = m.ClassDef(
+    name=m.SaveMatchedNode(m.Name("BaseManager") | m.Name("_QuerySet") | m.Name("Model"), "cls_name")
+)
 """Matches the `BaseManager` and `_QuerySet` class definitions."""
-
-T_TYPE_VAR_MATCHER = m.SimpleStatementLine(body=[m.Assign(targets=[m.AssignTarget(m.Name("_T"))])])
-"""Matches the definition of the `_T` type variable."""
-
-TUPLE_T_TYPE_VAR_MATCHER = m.SimpleStatementLine(body=[m.Assign(targets=[m.AssignTarget(m.Name("_TupleT"))])])
-"""Matches the definition of the `_TupleT` type variable."""
 
 
 class CreateOverloadCodemod(StubVisitorBasedCodemod):
-    """A codemod that will add overloads to the `create`/`acreate` methods of managers and querysets.
+    """A codemod that will add overloads to methods creating an instance of a model.
 
     Rule identifier: `DJAS002`.
     """
 
-    STUB_FILES = {"db/models/manager.pyi", "db/models/query.pyi"}
+    STUB_FILES = {"db/models/manager.pyi", "db/models/query.pyi", "db/models/base.pyi"}
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
@@ -42,18 +39,9 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
         self.add_typing_imports(["TypedDict", "TypeVar", "Unpack", "overload"])
 
     def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
-        """Add the `TypedDict` declarations, used to type `kwargs` arguments of `create`/`acreate`."""
-        body = list(updated_node.body)
-
-        model_typed_dicts = _build_model_kwargs(self.django_context)
-
-        t_type_var = next(node for node in body if m.matches(node, T_TYPE_VAR_MATCHER))
-        index = body.index(t_type_var) + 1
-        body[index:index] = model_typed_dicts
-
-        return updated_node.with_changes(
-            body=body,
-        )
+        """Add the necessary `TypedDict` definitions after imports."""
+        model_typed_dicts = _build_model_kwargs(self.django_context, self.stub_settings.all_model_fields_optional)
+        return self.insert_after_imports(updated_node, model_typed_dicts)
 
     @m.leave(CLASS_DEF_MATCHER)
     def mutate_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
@@ -61,8 +49,11 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
 
         extracted = m.extract(updated_node, CLASS_DEF_MATCHER)
         cls_name: str = extracted.get("cls_name").value
+
         new_body = list(updated_node.body.body)
-        for method_name in ("create", "acreate"):
+
+        method_names = ("__init__",) if cls_name == "Model" else ("create", "acreate")
+        for method_name in method_names:
             create_method = get_method_node(updated_node, method_name)
             overload_create = create_method.with_changes(decorators=[OVERLOAD_DECORATOR])
 
@@ -71,11 +62,13 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
             for model in self.django_context.models:
                 model_name = self.django_context.get_model_name(model)
 
-                # sets `self: BaseManager/_QuerySet[model_name]`
-                if cls_name == "BaseManager":
+                # sets `self: BaseManager/_QuerySet[model_name]/model_name`
+                if cls_name == "_QuerySet":
+                    annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}, _Row]")
+                elif cls_name == "BaseManager":
                     annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}]")
                 else:
-                    annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}, _Row]")
+                    annotation = helpers.parse_template_expression(model_name)
                 self_param = get_param(overload_create, "self")
                 overload = overload_create.with_deep_changes(
                     old_node=self_param,
@@ -89,17 +82,24 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
                     ),
                 )
 
+                if cls_name == "Model":
+                    # Remove `*args` from the definition:
+                    overload = overload.with_deep_changes(
+                        old_node=overload.params,
+                        star_arg=cst.MaybeSentinel.DEFAULT,
+                    )
+
                 overloads.append(overload)
 
-            get_index = new_body.index(create_method)
-            new_body.pop(get_index)
+            create_index = new_body.index(create_method)
+            new_body.pop(create_index)
 
-            new_body[get_index:get_index] = overloads
+            new_body[create_index:create_index] = overloads
 
         return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
 
 
-def _build_model_kwargs(django_context: DjangoStubbingContext) -> list[cst.ClassDef]:
+def _build_model_kwargs(django_context: DjangoStubbingContext, all_optional: bool) -> list[cst.ClassDef]:
     class_defs: list[cst.ClassDef] = []
 
     for model in django_context.models:
@@ -112,10 +112,11 @@ def _build_model_kwargs(django_context: DjangoStubbingContext) -> list[cst.Class
                         field.name,
                         annotation="Any",
                         docstring=getattr(field, "help_text", None) or None,
+                        required=not all_optional and not django_context.is_optional(field),
                     )
-                    for field in model._meta._get_fields(reverse=False)
+                    for field in cast(list[Field], model._meta._get_fields(reverse=False))
                 ],
-                total=False,  # TODO find a way to determine which fields are required.
+                total=False,
                 leading_line=True,
             )
         )

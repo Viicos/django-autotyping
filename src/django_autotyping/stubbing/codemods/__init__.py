@@ -4,12 +4,14 @@ from typing import Container, Literal
 
 from libcst.codemod import VisitorBasedCodemodCommand
 
+from .base import StubVisitorBasedCodemod
 from .create_overload_codemod import CreateOverloadCodemod
 from .forward_relation_overload_codemod import ForwardRelationOverloadCodemod
 from .get_model_overload_codemod import GetModelOverloadCodemod
 from .query_lookups_overload_codemod import QueryLookupsOverloadCodemod
 
 __all__ = (
+    "StubVisitorBasedCodemod",
     "CreateOverloadCodemod",
     "ForwardRelationOverloadCodemod",
     "GetModelOverloadCodemod",

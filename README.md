@@ -89,6 +89,26 @@ only allows model instances and `None` to be set.
 
 _Affected rules: `DJAS001`._
 
+## `MODEL_FIELDS_OPTIONAL`
+
+_Default value: `True`._
+
+Whether all model fields should be considered optional when creating model instances.
+
+This affects the following signatures:
+- `Manager.create/acreate`
+- `__init__` methods of models
+
+A lot can happen behind the scenes when instantiating models. Even if a field doesn't have
+a default value provided, the database could have triggers implemented that would provide one.
+This is why, by default, this configuration attribute defaults to `True`. If set to `False`,
+`django-autotyping` will try its best to determine required fields, namely by checking if:
+- the field can be `null`
+- the field has a default or a database default value set
+- the field is a subclass of `DateField` and has `auto_now` or `auto_now_add` set to `True`.
+
+_Affected rules: `DJAS002`._
+
 # Available rules
 
 ## Add type hints to related fields (`DJAS001`)
@@ -122,11 +142,11 @@ class ForeignKey(ForeignObject[_ST, _GT]):
 ```
 </details>
 
-## Add type hints to the `create`/`acreate` method of managers and querysets (`DJAS002`)
+## Add type hints to methods that create an instance of a model (`DJAS002`)
 
-A codemod that will add overloads to the `create`/`acreate` methods of managers and querysets.
+A codemod that will add overloads to the `create`/`acreate` methods of managers and querysets, along with overloads for the `__init__` method of models.
 
-This will provide auto-completion when using `Model.objects.create`.
+The generated signature can be affected by the [`MODEL_FIELDS_OPTIONAL`](#model_fields_optional) setting.
 
 <details>
 
