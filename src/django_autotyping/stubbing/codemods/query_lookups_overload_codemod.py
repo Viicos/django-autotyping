@@ -7,9 +7,11 @@ import libcst.matchers as m
 from libcst import helpers
 from libcst.codemod import CodemodContext
 
+from django_autotyping.typing import FlattenFunctionDef
+
 from .base import StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import TypedDictField, build_typed_dict, get_method_node, get_param
+from .utils import TypedDictField, build_typed_dict, get_param
 
 if TYPE_CHECKING:
     from ..django_context import DjangoStubbingContext
@@ -18,6 +20,9 @@ if TYPE_CHECKING:
 
 BASE_MANAGER_CLASS_DEF_MATCHER = m.ClassDef(name=m.Name("BaseManager"))
 """Matches the `ManyToManyField` class definition."""
+
+GET_MODEL_DEF_MATCHER = m.FunctionDef(name=m.Name("get"))
+"""Matches the `get` method definition."""
 
 
 class QueryLookupsOverloadCodemod(StubVisitorBasedCodemod):
@@ -40,15 +45,14 @@ class QueryLookupsOverloadCodemod(StubVisitorBasedCodemod):
         model_typed_dicts = _build_model_kwargs(self.django_context.models)
         return self.insert_after_imports(updated_node, model_typed_dicts)
 
-    @m.leave(BASE_MANAGER_CLASS_DEF_MATCHER)
-    def mutate_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
+    @m.call_if_inside(BASE_MANAGER_CLASS_DEF_MATCHER)
+    @m.leave(GET_MODEL_DEF_MATCHER)
+    def mutate_classDef(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef) -> FlattenFunctionDef:
         """Add the necessary overloads to foreign fields that supports
         that supports parametrization of the `__set__` and `__get__` types.
         """
 
-        get_method = get_method_node(updated_node, "get")
-        overload_get = get_method.with_changes(decorators=[OVERLOAD_DECORATOR])
-
+        overload_get = updated_node.with_changes(decorators=[OVERLOAD_DECORATOR])
         overloads: list[cst.FunctionDef] = []
 
         for model in self.django_context.models:
@@ -68,13 +72,7 @@ class QueryLookupsOverloadCodemod(StubVisitorBasedCodemod):
 
             overloads.append(overload)
 
-        new_body = list(updated_node.body.body)
-        get_index = new_body.index(get_method)
-        new_body.pop(get_index)
-
-        new_body[get_index:get_index] = overloads
-
-        return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
+        return cst.FlattenSentinel(overloads)
 
 
 def _build_model_kwargs(django_context: DjangoStubbingContext) -> list[cst.ClassDef]:

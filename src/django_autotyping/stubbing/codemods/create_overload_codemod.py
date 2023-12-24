@@ -7,20 +7,34 @@ import libcst.matchers as m
 from django.db.models import Field
 from libcst import helpers
 from libcst.codemod import CodemodContext
+from libcst.metadata import ScopeProvider
+
+from django_autotyping.typing import FlattenFunctionDef
 
 from .base import StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import TypedDictField, build_typed_dict, get_method_node, get_param
+from .utils import TypedDictField, build_typed_dict, get_param
 
 if TYPE_CHECKING:
     from ..django_context import DjangoStubbingContext
 
 # Matchers:
 
-CLASS_DEF_MATCHER = m.ClassDef(
-    name=m.SaveMatchedNode(m.Name("BaseManager") | m.Name("_QuerySet") | m.Name("Model"), "cls_name")
+MANAGER_QS_CLASS_DEF_MATCHER = m.ClassDef(
+    name=m.SaveMatchedNode(m.Name("BaseManager") | m.Name("_QuerySet"), "cls_name")
 )
 """Matches the `BaseManager` and `_QuerySet` class definitions."""
+
+MODEL_CLASS_DEF_MATCHER = m.ClassDef(name=m.SaveMatchedNode(m.Name("Model"), "cls_name"))
+"""Matches the `Model` class definition."""
+
+
+CREATE_DEF_MATCHER = m.FunctionDef(name=m.Name("create") | m.Name("acreate"))
+"""Matches the `create` and `acreate` method definitions."""
+
+
+INIT_DEF_MATCHER = m.FunctionDef(name=m.Name("__init__"))
+"""Matches the `__init__` method definition."""
 
 
 class CreateOverloadCodemod(StubVisitorBasedCodemod):
@@ -29,6 +43,7 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
     Rule identifier: `DJAS002`.
     """
 
+    METADATA_DEPENDENCIES = {ScopeProvider}
     STUB_FILES = {"db/models/manager.pyi", "db/models/query.pyi", "db/models/base.pyi"}
 
     def __init__(self, context: CodemodContext) -> None:
@@ -40,63 +55,64 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
 
     def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
         """Add the necessary `TypedDict` definitions after imports."""
-        model_typed_dicts = _build_model_kwargs(self.django_context, self.stub_settings.all_model_fields_optional)
+        model_typed_dicts = _build_model_kwargs(self.django_context, self.stub_settings.model_fields_optional)
         return self.insert_after_imports(updated_node, model_typed_dicts)
 
-    @m.leave(CLASS_DEF_MATCHER)
-    def mutate_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
-        """Add the necessary overloads to the `create`/`acreate` methods of `BaseManager` and `_QuerSet`."""
+    def mutate_FunctionDef(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef) -> FlattenFunctionDef:
+        cls_name = self.get_metadata(ScopeProvider, original_node).name
 
-        extracted = m.extract(updated_node, CLASS_DEF_MATCHER)
-        cls_name: str = extracted.get("cls_name").value
+        overload = updated_node.with_changes(decorators=[OVERLOAD_DECORATOR])
+        overloads: list[cst.FunctionDef] = []
 
-        new_body = list(updated_node.body.body)
+        for model in self.django_context.models:
+            model_name = self.django_context.get_model_name(model)
 
-        method_names = ("__init__",) if cls_name == "Model" else ("create", "acreate")
-        for method_name in method_names:
-            create_method = get_method_node(updated_node, method_name)
-            overload_create = create_method.with_changes(decorators=[OVERLOAD_DECORATOR])
+            # sets `self: BaseManager[model_name]/_QuerySet[model_name, _Row]/model_name`
+            if cls_name == "_QuerySet":
+                annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}, _Row]")
+            elif cls_name == "BaseManager":
+                annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}]")
+            else:
+                annotation = helpers.parse_template_expression(model_name)
+            self_param = get_param(overload, "self")
+            overload_ = overload.with_deep_changes(
+                old_node=self_param,
+                annotation=cst.Annotation(annotation),
+            )
 
-            overloads: list[cst.FunctionDef] = []
+            overload_ = overload_.with_deep_changes(
+                old_node=overload_.params.star_kwarg,
+                annotation=cst.Annotation(
+                    annotation=helpers.parse_template_expression(f"Unpack[{model_name}CreateKwargs]")
+                ),
+            )
 
-            for model in self.django_context.models:
-                model_name = self.django_context.get_model_name(model)
-
-                # sets `self: BaseManager/_QuerySet[model_name]/model_name`
-                if cls_name == "_QuerySet":
-                    annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}, _Row]")
-                elif cls_name == "BaseManager":
-                    annotation = helpers.parse_template_expression(f"{cls_name}[{model_name}]")
-                else:
-                    annotation = helpers.parse_template_expression(model_name)
-                self_param = get_param(overload_create, "self")
-                overload = overload_create.with_deep_changes(
-                    old_node=self_param,
-                    annotation=cst.Annotation(annotation),
+            if cls_name == "Model":
+                # Remove `*args` from the definition:
+                overload_ = overload_.with_deep_changes(
+                    old_node=overload_.params,
+                    star_arg=cst.MaybeSentinel.DEFAULT,
                 )
 
-                overload = overload.with_deep_changes(
-                    old_node=overload.params.star_kwarg,
-                    annotation=cst.Annotation(
-                        annotation=helpers.parse_template_expression(f"Unpack[{model_name}CreateKwargs]")
-                    ),
-                )
+            overloads.append(overload_)
 
-                if cls_name == "Model":
-                    # Remove `*args` from the definition:
-                    overload = overload.with_deep_changes(
-                        old_node=overload.params,
-                        star_arg=cst.MaybeSentinel.DEFAULT,
-                    )
+        return cst.FlattenSentinel(overloads)
 
-                overloads.append(overload)
+    @m.call_if_inside(MANAGER_QS_CLASS_DEF_MATCHER)
+    @m.leave(CREATE_DEF_MATCHER)
+    def mutate_create_FunctionDef(
+        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
+    ) -> FlattenFunctionDef:
+        """Add overloads for `create`/`acreate` if in `BaseManager`/`_QuerSet`."""
+        return self.mutate_FunctionDef(original_node, updated_node)
 
-            create_index = new_body.index(create_method)
-            new_body.pop(create_index)
-
-            new_body[create_index:create_index] = overloads
-
-        return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
+    @m.call_if_inside(MODEL_CLASS_DEF_MATCHER)
+    @m.leave(INIT_DEF_MATCHER)
+    def mutate_init_FunctionDef(
+        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
+    ) -> FlattenFunctionDef:
+        """Add overloads for `__init__` if in `Model`."""
+        return self.mutate_FunctionDef(original_node, updated_node)
 
 
 def _build_model_kwargs(django_context: DjangoStubbingContext, all_optional: bool) -> list[cst.ClassDef]:

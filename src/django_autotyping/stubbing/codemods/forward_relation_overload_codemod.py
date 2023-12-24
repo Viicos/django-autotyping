@@ -5,12 +5,13 @@ import libcst.matchers as m
 from libcst import helpers
 from libcst.codemod import CodemodContext
 from libcst.codemod.visitors import AddImportsVisitor
+from libcst.metadata import ScopeProvider
 
-from django_autotyping.typing import ModelType
+from django_autotyping.typing import FlattenFunctionDef, ModelType
 
 from .base import StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import get_kw_param, get_method_node, get_param
+from .utils import get_kw_param, get_param
 
 MODEL_T_TYPE_VAR = helpers.parse_template_statement('_ModelT = TypeVar("_ModelT", bound=Model)')
 """A statement assigning `_ModelT = TypeVar("_ModelT", bound=Model)`."""
@@ -24,6 +25,9 @@ RELATED_CLASS_DEF_MATCHER = m.ClassDef(
 
 MANY_TO_MANY_CLASS_DEF_MATCHER = m.ClassDef(name=m.Name("ManyToManyField"))
 """Matches the `ManyToManyField` class definition."""
+
+INIT_DEF_MATCHER = m.FunctionDef(name=m.Name("__init__"))
+"""Matches the `__init__` method definition."""
 
 
 class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
@@ -48,6 +52,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
     ```
     """
 
+    METADATA_DEPENDENCIES = {ScopeProvider}
     STUB_FILES = {"db/models/fields/related.pyi"}
 
     def __init__(self, context: CodemodContext) -> None:
@@ -67,15 +72,16 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
         """Add the necessary `TypeVar` definition after imports."""
         return self.insert_after_imports(updated_node, [MODEL_T_TYPE_VAR])
 
-    @m.leave(MANY_TO_MANY_CLASS_DEF_MATCHER)
-    def mutate_ManyToManyField_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
-        """Add the necessary overloads for `ManyToManyField`.
+    @m.call_if_inside(MANY_TO_MANY_CLASS_DEF_MATCHER)
+    @m.leave(INIT_DEF_MATCHER)
+    def mutate_ManyToManyField_FunctionDef(
+        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
+    ) -> FlattenFunctionDef:
+        """Add the necessary overloads for `ManyToManyField`'s `__init__` method.
 
         Due to combinatorial explosion, we can't add overloads that would handle `through` models alongside with `to`.
         """
-        init_node = get_method_node(updated_node, "__init__")
-        overload_init = init_node.with_changes(decorators=[OVERLOAD_DECORATOR])
-
+        overload_init = updated_node.with_changes(decorators=[OVERLOAD_DECORATOR])
         overloads: list[cst.FunctionDef] = []
 
         for model in self.django_context.models:
@@ -116,28 +122,21 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
                 )
             ),
         )
-
         overloads.append(model_overload)
 
-        new_body = list(updated_node.body.body)
-        init_index = new_body.index(init_node)
-        new_body.pop(init_index)
+        return cst.FlattenSentinel(overloads)
 
-        new_body[init_index:init_index] = overloads
-
-        return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
-
-    @m.leave(RELATED_CLASS_DEF_MATCHER)
-    def mutate_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
+    @m.call_if_inside(RELATED_CLASS_DEF_MATCHER)
+    @m.leave(INIT_DEF_MATCHER)
+    def mutate_relatedFields_FunctionDef(
+        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
+    ) -> FlattenFunctionDef:
         """Add the necessary overloads to foreign fields that supports
         that supports parametrization of the `__set__` and `__get__` types.
         """
-        extracted = m.extract(updated_node, RELATED_CLASS_DEF_MATCHER)
-        field_cls_name: str = extracted.get("field_cls_name").value
+        field_cls_name = self.get_metadata(ScopeProvider, original_node).name
 
-        init_node = get_method_node(updated_node, "__init__")
-        overload_init = init_node.with_changes(decorators=[OVERLOAD_DECORATOR])
-
+        overload_init = updated_node.with_changes(decorators=[OVERLOAD_DECORATOR])
         overloads: list[cst.FunctionDef] = []
 
         # For each model, create two overloads, depending on the `null` value:
@@ -235,13 +234,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
 
         # overloads.append(literal_completion_overload)
 
-        new_body = list(updated_node.body.body)
-        init_index = new_body.index(init_node)
-        new_body.pop(init_index)
-
-        new_body[init_index:init_index] = overloads
-
-        return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
+        return cst.FlattenSentinel(overloads)
 
 
 def _build_self_annotation(
