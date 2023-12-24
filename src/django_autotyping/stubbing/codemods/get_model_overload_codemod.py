@@ -5,14 +5,19 @@ import libcst.matchers as m
 from libcst import helpers
 from libcst.codemod import CodemodContext
 
+from django_autotyping.typing import FlattenFunctionDef
+
 from .base import StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import get_method_node, get_param
+from .utils import get_param
 
 # Matchers:
 
 CLASS_DEF_MATCHER = m.ClassDef(name=m.Name("Apps"))
 """Matches the `Apps` class definition."""
+
+GET_MODEL_DEF_MATCHER = m.FunctionDef(name=m.Name("get_model"))
+"""Matches the `get_model` method definition."""
 
 
 class GetModelOverloadCodemod(StubVisitorBasedCodemod):
@@ -30,13 +35,10 @@ class GetModelOverloadCodemod(StubVisitorBasedCodemod):
         # Even though these are most likely included, we import them for safety:
         self.add_typing_imports(["Literal", "overload"])
 
-    @m.leave(CLASS_DEF_MATCHER)
-    def mutate_classDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
-        """Add the necessary overloads to the `create`/`acreate` methods of `BaseManager` and `_QuerSet`."""
-
-        get_models_method = get_method_node(updated_node, "get_model")
-        overload_get_model = get_models_method.with_changes(decorators=[OVERLOAD_DECORATOR])
-
+    @m.call_if_inside(CLASS_DEF_MATCHER)
+    @m.leave(GET_MODEL_DEF_MATCHER)
+    def mutate_FunctionDef(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef) -> FlattenFunctionDef:
+        overload = updated_node.with_changes(decorators=[OVERLOAD_DECORATOR])
         overloads: list[cst.FunctionDef] = []
 
         for model in self.django_context.models:
@@ -45,24 +47,24 @@ class GetModelOverloadCodemod(StubVisitorBasedCodemod):
                 app_label = model._meta.app_label
 
                 # sets `app_label: Literal[...]`
-                app_label_param = get_param(overload_get_model, "app_label")
+                app_label_param = get_param(overload, "app_label")
                 if use_shortcut:
                     annotation = helpers.parse_template_expression(f'Literal["{app_label}.{model.__name__}"]')
                 else:
                     annotation = helpers.parse_template_expression(f'Literal["{app_label}"]')
-                overload = overload_get_model.with_deep_changes(
+                overload_ = overload.with_deep_changes(
                     old_node=app_label_param,
                     annotation=cst.Annotation(annotation),
                 )
 
                 # sets `model_name: Literal[...]`
-                model_name_param = get_param(overload, "model_name")
+                model_name_param = get_param(overload_, "model_name")
                 if use_shortcut:
                     annotation = helpers.parse_template_expression("Literal[None]")
                 else:
                     annotation = helpers.parse_template_expression(f'Literal["{model.__name__}"]')
 
-                overload = overload.with_deep_changes(
+                overload_ = overload_.with_deep_changes(
                     old_node=model_name_param,
                     annotation=cst.Annotation(annotation),
                     default=None if not use_shortcut else model_name_param.default,
@@ -70,17 +72,11 @@ class GetModelOverloadCodemod(StubVisitorBasedCodemod):
                 )
 
                 # sets return value
-                overload = overload.with_changes(
+                overload_ = overload_.with_changes(
                     # This time use the imported model name!
                     returns=cst.Annotation(helpers.parse_template_expression(f"type[{model_name}]"))
                 )
 
-                overloads.append(overload)
+                overloads.append(overload_)
 
-        new_body = list(updated_node.body.body)
-        get_models_index = new_body.index(get_models_method)
-        new_body.pop(get_models_index)
-
-        new_body[get_models_index:get_models_index] = overloads
-
-        return updated_node.with_deep_changes(old_node=updated_node.body, body=new_body)
+        return cst.FlattenSentinel(overloads)
