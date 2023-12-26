@@ -1,25 +1,30 @@
 from __future__ import annotations
 
-import re
+from importlib import import_module
+from typing import Any, Union, cast
 
 from django.apps.registry import Apps
+from django.conf import LazySettings
 from django.db.models import NOT_PROVIDED, DateField, Field
+from django.urls import URLPattern, URLResolver
 from libcst.codemod.visitors import ImportItem
 
 from django_autotyping.typing import ModelType
 
+from .codemods.utils import to_pascal
+
 
 class DjangoStubbingContext:
-    def __init__(self, apps: Apps):
+    def __init__(self, apps: Apps, settings: LazySettings) -> None:
         self.apps = apps
+        self.settings = settings
 
     @staticmethod
     def _get_model_alias(model: ModelType) -> str:
         """Return an alias of the model, by converting the app label to PascalCase and joining
         the app label to the model name.
         """
-        app_label = model._meta.app_label.title()
-        app_label = re.sub("([0-9A-Za-z])_(?=[0-9A-Z])", lambda m: m.group(1), app_label)
+        app_label = to_pascal(model._meta.app_label)
         return f"{app_label}{model.__name__}"
 
     @property
@@ -42,6 +47,12 @@ class DjangoStubbingContext:
             )
             for model in self.models
         ]
+
+    @property
+    def reverse_lookups(self) -> dict[str, dict[str, Any]]:
+        """A mapping between viewnames to be used with `reverse` and the available lookup arguments."""
+        patterns = cast(list[Union[URLResolver, URLPattern]], import_module(self.settings.ROOT_URLCONF).urlpatterns)
+        return _get_reverse_map(patterns)
 
     def is_duplicate(self, model: ModelType) -> bool:
         """Whether the model has a duplicate name with another model in a different app."""
@@ -68,3 +79,25 @@ class DjangoStubbingContext:
             or isinstance(field, DateField)
             and (field.auto_now or field.auto_now_add)
         )
+
+
+def _get_reverse_map(
+    url_patterns: list[URLResolver | URLPattern], parent_namespaces: list[str] | None = None
+) -> dict[str, dict[str, Any]]:
+    if parent_namespaces is None:
+        parent_namespaces = []
+    paths_info = {}
+
+    for pattern in url_patterns:
+        if isinstance(pattern, URLResolver):
+            new_parent_namespaces = parent_namespaces.copy()
+            if pattern.namespace:
+                new_parent_namespaces.append(pattern.namespace)
+            paths_info = {
+                **paths_info,
+                **_get_reverse_map(pattern.url_patterns, parent_namespaces=new_parent_namespaces),
+            }
+        elif isinstance(pattern, URLPattern) and pattern.name:
+            paths_info[":".join(parent_namespaces) + pattern.name] = pattern.pattern.converters
+
+    return paths_info

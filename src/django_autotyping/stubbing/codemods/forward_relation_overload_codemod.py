@@ -9,7 +9,7 @@ from libcst.metadata import ScopeProvider
 
 from django_autotyping.typing import FlattenFunctionDef, ModelType
 
-from .base import StubVisitorBasedCodemod
+from .base import InsertAfterImportsVisitor, StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
 from .utils import get_kw_param, get_param
 
@@ -58,6 +58,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
         self.add_model_imports()
+        InsertAfterImportsVisitor.insert_after_imports(context, [MODEL_T_TYPE_VAR])
 
         # Even though these are most likely included, we import them for safety:
         self.add_typing_imports(["Literal", "TypeVar", "overload"])
@@ -67,10 +68,6 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
             module="django.db.models.expressions",
             obj="Combinable",
         )
-
-    def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
-        """Add the necessary `TypeVar` definition after imports."""
-        return self.insert_after_imports(updated_node, [MODEL_T_TYPE_VAR])
 
     @m.call_if_inside(MANY_TO_MANY_CLASS_DEF_MATCHER)
     @m.leave(INIT_DEF_MATCHER)
