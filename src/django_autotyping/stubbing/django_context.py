@@ -7,6 +7,8 @@ from django.apps.registry import Apps
 from django.conf import LazySettings
 from django.db.models import NOT_PROVIDED, DateField, Field
 from django.urls import URLPattern, URLResolver
+from django.urls.converters import StringConverter
+from django.urls.resolvers import RegexPattern, RoutePattern
 from libcst.codemod.visitors import ImportItem
 
 from django_autotyping.typing import ModelType
@@ -49,7 +51,7 @@ class DjangoStubbingContext:
         ]
 
     @property
-    def reverse_lookups(self) -> dict[str, dict[str, Any]]:
+    def reverse_lookups(self) -> dict[str, dict[str, tuple[Any, bool]]]:
         """A mapping between viewnames to be used with `reverse` and the available lookup arguments."""
         patterns = cast(list[Union[URLResolver, URLPattern]], import_module(self.settings.ROOT_URLCONF).urlpatterns)
         return _get_reverse_map(patterns)
@@ -83,12 +85,16 @@ class DjangoStubbingContext:
 
 def _get_reverse_map(
     url_patterns: list[URLResolver | URLPattern], parent_namespaces: list[str] | None = None
-) -> dict[str, dict[str, Any]]:
+) -> dict[str, dict[str, tuple[Any, bool]]]:
+    """Build a mapping between view names usable as a lookup with `reverse` and a mapping between
+    the views arguments and a two-tuple (the converter instance and a boolean indicating whether
+    the argument is required).
+    """
     if parent_namespaces is None:
         parent_namespaces = []
     paths_info = {}
 
-    for pattern in url_patterns:
+    for pattern in reversed(url_patterns):  # Parsing in reverse is important!
         if isinstance(pattern, URLResolver):
             new_parent_namespaces = parent_namespaces.copy()
             if pattern.namespace:
@@ -98,6 +104,21 @@ def _get_reverse_map(
                 **_get_reverse_map(pattern.url_patterns, parent_namespaces=new_parent_namespaces),
             }
         elif isinstance(pattern, URLPattern) and pattern.name:
-            paths_info[":".join(parent_namespaces) + pattern.name] = pattern.pattern.converters
+            key = ":".join(parent_namespaces)
+            if key:
+                key += ":"
+            key += pattern.name
+
+            if isinstance(pattern.pattern, RoutePattern):
+                paths_info[key] = {k: (v, k not in pattern.default_args) for k, v in pattern.pattern.converters.items()}
+            elif isinstance(pattern.pattern, RegexPattern):
+                # We extract named regex groups from the `re.Pattern` object,
+                # and assume the converter is a `StringConverter`
+                # (the codemod will map the type hint accordingly).
+                # Unnamed groups are not supported, and discouraged anyway
+                paths_info[key] = {
+                    k: (StringConverter(), k not in pattern.default_args)
+                    for k in pattern.pattern.regex.groupindex.keys()
+                }
 
     return paths_info

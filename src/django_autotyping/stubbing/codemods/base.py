@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..stub_settings import StubSettings
 
 
-TYPING_EXTENSIONS_NAMES = ["Unpack"]
+TYPING_EXTENSIONS_NAMES = ["Unpack", "Required", "NotRequired"]
 
 ModuleT = TypeVar("ModuleT", bound=cst.Module)
 
