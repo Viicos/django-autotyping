@@ -1,19 +1,87 @@
 from __future__ import annotations
 
-from importlib import import_module
-from typing import Any, Union, cast
+import hashlib
+from collections import defaultdict
+from dataclasses import dataclass, field
 
 from django.apps.registry import Apps
 from django.conf import LazySettings
 from django.db.models import NOT_PROVIDED, DateField, Field
-from django.urls import URLPattern, URLResolver
-from django.urls.converters import StringConverter
-from django.urls.resolvers import RegexPattern, RoutePattern
+from django.urls import URLPattern, URLResolver, get_resolver
 from libcst.codemod.visitors import ImportItem
 
 from django_autotyping.typing import ModelType
 
 from .codemods.utils import to_pascal
+
+
+@dataclass(eq=True)
+class PathInfo:
+    # TODO refactor the structure
+    kwargs_list: list[dict[str, bool]] = field(default_factory=list)
+
+    @property
+    def is_empty(self) -> bool:
+        return all(kwargs == {} for kwargs in self.kwargs_list)
+
+    def __hash__(self) -> int:
+        raise NotImplementedError()  # TODO
+
+    def get_kwargs_hash(self, kwargs: dict[str, bool]) -> str:
+        return hashlib.sha1("".join(f"{k}={v}" for k, v in sorted(kwargs.items())))[:6]
+
+    def add_kwargs_entry(self, kwargs: dict[str, bool]) -> None:
+        # First, check for an existing entry with one key, e.g.:
+        # `{"key": True}`
+        # If the new entry has the same (and only!) key and this key is not required,
+        # we update the existing entry and mark it as not required. We don't want to update
+        # the entry if the new entry key is required, as it could have been marked as not
+        # required previously.
+        # This special case is to avoid having
+        # `TypedDict("...", {"key": NotRequired[...]}) | TypedDict("...", {"key": ...})`
+        # as a type hint.
+        # TODO this should also work with multiple keys, but only when the exact same keys are present
+        existing_entry = next((e for e in self.kwargs_list if e.keys() == kwargs.keys() and len(e) == 1), None)
+        if existing_entry is not None and not list(kwargs.values())[0]:
+            key = list(existing_entry.keys())[0]
+            existing_entry[key] = False
+        else:
+            self.kwargs_list.append(kwargs)
+
+    def get_typeddict_name(self, kwargs: dict[str, bool]) -> str:
+        return f"_{self.get_kwargs_hash(kwargs).upper()}Kwargs"
+
+    def get_kwargs_annotation(self) -> str:
+        """Return the type annotation for the `kwargs` argument of `reverse`.
+
+        In this context, `kwargs` refer to the function argument, not the kwargs of a view.
+        """
+        kwargs_str = [self.get_typeddict_name(kwargs) for kwargs in self.kwargs_list if kwargs]
+        if {} in self.kwargs_list:
+            kwargs_str.extend(["EmptyDict", "None"])
+
+        return " | ".join(kwargs_str)
+
+    def get_args_annotation(self, sequence_fallback: bool = True) -> str:
+        """Return the type annotation for the `args` argument of `reverse`.
+
+        If multiple URL patterns are available for a specific URL name (i.e. `kwargs_list` contains
+        multiple entries), the generated annotation will be the union of the possible tuple shapes.
+
+        Args:
+            sequence_fallback: Whether to include a `Sequence[Any]` fallback type, to match against other
+                sequence types such as lists.
+        """
+        args_lengths = [len(kwargs) for kwargs in self.kwargs_list]
+        tuples_str = [
+            f"tuple[{', '.join('SupportsStr' for _ in range(length))}]" for length in args_lengths if length > 0
+        ]
+        if 0 in args_lengths:
+            tuples_str.extend(["tuple[()]", "None"])
+        if sequence_fallback:
+            tuples_str.append("Sequence[Any]")
+
+        return " | ".join(tuples_str)
 
 
 class DjangoStubbingContext:
@@ -51,10 +119,9 @@ class DjangoStubbingContext:
         ]
 
     @property
-    def reverse_lookups(self) -> dict[str, dict[str, tuple[Any, bool]]]:
+    def viewnames_lookups(self) -> defaultdict[str, PathInfo]:
         """A mapping between viewnames to be used with `reverse` and the available lookup arguments."""
-        patterns = cast(list[Union[URLResolver, URLPattern]], import_module(self.settings.ROOT_URLCONF).urlpatterns)
-        return _get_reverse_map(patterns)
+        return _get_reverse_map(get_resolver())
 
     def is_duplicate(self, model: ModelType) -> bool:
         """Whether the model has a duplicate name with another model in a different app."""
@@ -84,41 +151,29 @@ class DjangoStubbingContext:
 
 
 def _get_reverse_map(
-    url_patterns: list[URLResolver | URLPattern], parent_namespaces: list[str] | None = None
-) -> dict[str, dict[str, tuple[Any, bool]]]:
-    """Build a mapping between view names usable as a lookup with `reverse` and a mapping between
-    the views arguments and a two-tuple (the converter instance and a boolean indicating whether
-    the argument is required).
-    """
-    if parent_namespaces is None:
-        parent_namespaces = []
-    paths_info = {}
+    url_resolver: URLResolver,
+    parent_namespaces: list[str] | None = None,
+) -> defaultdict[str, PathInfo]:
+    parent_namespaces = parent_namespaces or []
+    paths_info: defaultdict[str, PathInfo] = defaultdict(PathInfo)
 
-    for pattern in reversed(url_patterns):  # Parsing in reverse is important!
-        if isinstance(pattern, URLResolver):
-            new_parent_namespaces = parent_namespaces.copy()
-            if pattern.namespace:
-                new_parent_namespaces.append(pattern.namespace)
-            paths_info = {
-                **paths_info,
-                **_get_reverse_map(pattern.url_patterns, parent_namespaces=new_parent_namespaces),
-            }
-        elif isinstance(pattern, URLPattern) and pattern.name:
+    for pattern in reversed(url_resolver.url_patterns):  # Parsing in reverse is important!
+        if isinstance(pattern, URLPattern) and pattern.name:
             key = ":".join(parent_namespaces)
             if key:
                 key += ":"
             key += pattern.name
 
-            if isinstance(pattern.pattern, RoutePattern):
-                paths_info[key] = {k: (v, k not in pattern.default_args) for k, v in pattern.pattern.converters.items()}
-            elif isinstance(pattern.pattern, RegexPattern):
-                # We extract named regex groups from the `re.Pattern` object,
-                # and assume the converter is a `StringConverter`
-                # (the codemod will map the type hint accordingly).
-                # Unnamed groups are not supported, and discouraged anyway
-                paths_info[key] = {
-                    k: (StringConverter(), k not in pattern.default_args)
-                    for k in pattern.pattern.regex.groupindex.keys()
-                }
+            reverse_entries = url_resolver.reverse_dict.getlist(pattern.name)
+
+            for possibility, _, defaults, _ in reverse_entries:
+                for _, params in possibility:
+                    paths_info[key].add_kwargs_entry({k: (k not in defaults) for k in params})
+        elif isinstance(pattern, URLResolver):
+            new_parent_namespaces = parent_namespaces.copy()
+            if pattern.namespace:
+                new_parent_namespaces.append(pattern.namespace)
+
+            paths_info = {**paths_info, **_get_reverse_map(pattern, new_parent_namespaces)}
 
     return paths_info
