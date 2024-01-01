@@ -53,16 +53,15 @@ class PathInfo:
 
     def with_new_arguments(self, arguments: dict[str, bool]) -> PathInfo:
         unfrozen_set = set(self.arguments_set)
-        merged = False
 
         for args in self.arguments_set:
             if args.is_mergeable(arguments):
                 new_args = args.with_new_arguments(arguments)
                 unfrozen_set.remove(args)
                 unfrozen_set.add(new_args)
-                merged = True
-
-        if not merged:
+                break
+        else:
+            # Provided arguments aren't mergeable, add a new entry
             unfrozen_set.add(PathArguments(frozenset(arguments.items())))
         return replace(self, arguments_set=frozenset(unfrozen_set))
 
