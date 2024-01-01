@@ -7,7 +7,6 @@ import libcst as cst
 import libcst.matchers as m
 from libcst import helpers
 from libcst.codemod import CodemodContext
-from libcst.codemod.visitors import AddImportsVisitor
 
 from django_autotyping.typing import FlattenFunctionDef
 
@@ -55,11 +54,6 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
 
-        AddImportsVisitor.add_needed_import(
-            context,
-            module="uuid",
-            obj="UUID",
-        )
         InsertAfterImportsVisitor.insert_after_imports(context, [EMPTY_DICT_DEF, SUPPORTS_STR_DEF])
         self.add_typing_imports(["Literal", "TypedDict", "NotRequired", "Protocol", "overload"])
 
@@ -68,7 +62,7 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
         overload = updated_node.with_changes(decorators=[OVERLOAD_DECORATOR])
 
         overloads: list[cst.FunctionDef] = []
-        seen_kwargs_hashes: list[str] = []
+        seen_typeddict_names: list[str] = []
         reversed_dict: defaultdict[PathInfo, list[str]] = defaultdict(list)
 
         # First, build a reverse dictionary: a mapping between PathInfos instances (shared between views)
@@ -122,15 +116,15 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
                     annotation = LITERAL_NONE
                 else:
                     annotation = helpers.parse_template_expression(path_info.get_kwargs_annotation())
-                    for kwargs in path_info.kwargs_list:
-                        kwargs_hash = path_info.get_kwargs_hash(kwargs)
-                        if kwargs_hash in seen_kwargs_hashes:
+
+                    for path_args in path_info.arguments_set:
+                        typeddict_name = path_args.typeddict_name
+                        if typeddict_name in seen_typeddict_names:
                             continue
 
-                        seen_kwargs_hashes.append(kwargs_hash)
-                        typed_dict_name = path_info.get_typeddict_name(kwargs)
+                        seen_typeddict_names.append(typeddict_name)
                         typed_dict = build_typed_dict(
-                            typed_dict_name,
+                            typeddict_name,
                             attributes=[
                                 TypedDictAttribute(
                                     name=arg_name,
@@ -138,7 +132,7 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
                                     not_required=True if not required else None,
                                     # TODO, any docstring?
                                 )
-                                for arg_name, required in kwargs.items()
+                                for arg_name, required in path_args.arguments
                             ],
                             leading_line=True,
                         )

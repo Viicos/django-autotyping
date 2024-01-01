@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from django.apps.registry import Apps
 from django.conf import LazySettings
@@ -15,71 +15,84 @@ from django_autotyping.typing import ModelType
 from .codemods.utils import to_pascal
 
 
-@dataclass(eq=True)
+@dataclass(eq=True, frozen=True)
+class PathArguments:
+    arguments: frozenset[tuple[str, bool]] = field(default_factory=frozenset)
+
+    def __len__(self) -> int:
+        return len(self.arguments)
+
+    def __bool__(self) -> bool:
+        return bool(len(self))
+
+    @property
+    def sha1(self) -> str:
+        stringified = "".join(f"{k}={v}" for k, v in sorted(self.arguments, key=lambda arg: arg[0]))
+        return hashlib.sha1(stringified.encode("utf-8")).hexdigest()
+
+    @property
+    def typeddict_name(self) -> str:
+        return f"_{self.sha1[:6].upper()}Kwargs"
+
+    def is_mergeable(self, arguments: dict[str, bool]) -> bool:
+        """Return whether the keys of the provided arguments are the same as the current instance."""
+        return set(arg[0] for arg in self.arguments) == set(arguments)
+
+    def with_new_arguments(self, arguments: dict[str, bool]) -> PathArguments:
+        new_arguments = frozenset((k, False if not arguments[k] else is_required) for k, is_required in self.arguments)
+        return replace(self, arguments=new_arguments)
+
+
+@dataclass(eq=True, frozen=True)
 class PathInfo:
-    # TODO refactor the structure
-    kwargs_list: list[dict[str, bool]] = field(default_factory=list)
+    arguments_set: frozenset[PathArguments] = field(default_factory=frozenset)
 
     @property
     def is_empty(self) -> bool:
-        return all(kwargs == {} for kwargs in self.kwargs_list)
+        return all(not args for args in self.arguments_set)
 
-    def __hash__(self) -> int:
-        raise NotImplementedError()  # TODO
+    def with_new_arguments(self, arguments: dict[str, bool]) -> PathInfo:
+        unfrozen_set = set(self.arguments_set)
+        merged = False
 
-    def get_kwargs_hash(self, kwargs: dict[str, bool]) -> str:
-        return hashlib.sha1("".join(f"{k}={v}" for k, v in sorted(kwargs.items())))[:6]
+        for args in self.arguments_set:
+            if args.is_mergeable(arguments):
+                new_args = args.with_new_arguments(arguments)
+                unfrozen_set.remove(args)
+                unfrozen_set.add(new_args)
+                merged = True
 
-    def add_kwargs_entry(self, kwargs: dict[str, bool]) -> None:
-        # First, check for an existing entry with one key, e.g.:
-        # `{"key": True}`
-        # If the new entry has the same (and only!) key and this key is not required,
-        # we update the existing entry and mark it as not required. We don't want to update
-        # the entry if the new entry key is required, as it could have been marked as not
-        # required previously.
-        # This special case is to avoid having
-        # `TypedDict("...", {"key": NotRequired[...]}) | TypedDict("...", {"key": ...})`
-        # as a type hint.
-        # TODO this should also work with multiple keys, but only when the exact same keys are present
-        existing_entry = next((e for e in self.kwargs_list if e.keys() == kwargs.keys() and len(e) == 1), None)
-        if existing_entry is not None and not list(kwargs.values())[0]:
-            key = list(existing_entry.keys())[0]
-            existing_entry[key] = False
-        else:
-            self.kwargs_list.append(kwargs)
-
-    def get_typeddict_name(self, kwargs: dict[str, bool]) -> str:
-        return f"_{self.get_kwargs_hash(kwargs).upper()}Kwargs"
+        if not merged:
+            unfrozen_set.add(PathArguments(frozenset(arguments.items())))
+        return replace(self, arguments_set=frozenset(unfrozen_set))
 
     def get_kwargs_annotation(self) -> str:
-        """Return the type annotation for the `kwargs` argument of `reverse`.
+        """Return the type annotation for the `kwargs` argument of `reverse`."""
+        tds_str = [args.typeddict_name for args in self.arguments_set if args]
+        if any(not args for args in self.arguments_set):
+            tds_str.extend(["EmptyDict", "None"])
 
-        In this context, `kwargs` refer to the function argument, not the kwargs of a view.
-        """
-        kwargs_str = [self.get_typeddict_name(kwargs) for kwargs in self.kwargs_list if kwargs]
-        if {} in self.kwargs_list:
-            kwargs_str.extend(["EmptyDict", "None"])
+        return " | ".join(tds_str)
 
-        return " | ".join(kwargs_str)
-
-    def get_args_annotation(self, sequence_fallback: bool = True) -> str:
+    def get_args_annotation(self, list_fallback: bool = True) -> str:
         """Return the type annotation for the `args` argument of `reverse`.
 
-        If multiple URL patterns are available for a specific URL name (i.e. `kwargs_list` contains
+        If multiple URL patterns are available for a specific URL name (i.e. `arguments_set` contains
         multiple entries), the generated annotation will be the union of the possible tuple shapes.
 
         Args:
-            sequence_fallback: Whether to include a `Sequence[Any]` fallback type, to match against other
-                sequence types such as lists.
+            list_fallback: Whether to include a `list[Any]` fallback type.
         """
-        args_lengths = [len(kwargs) for kwargs in self.kwargs_list]
+        args_lengths = sorted([len(args) for args in self.arguments_set], reverse=True)
         tuples_str = [
             f"tuple[{', '.join('SupportsStr' for _ in range(length))}]" for length in args_lengths if length > 0
         ]
         if 0 in args_lengths:
-            tuples_str.extend(["tuple[()]", "None"])
-        if sequence_fallback:
-            tuples_str.append("Sequence[Any]")
+            tuples_str.append("tuple[()]")
+        if list_fallback:
+            tuples_str.append("list[Any]")
+        if 0 in args_lengths:
+            tuples_str.append("None")
 
         return " | ".join(tuples_str)
 
@@ -168,12 +181,11 @@ def _get_reverse_map(
 
             for possibility, _, defaults, _ in reverse_entries:
                 for _, params in possibility:
-                    paths_info[key].add_kwargs_entry({k: (k not in defaults) for k in params})
+                    paths_info[key] = paths_info[key].with_new_arguments({k: (k not in defaults) for k in params})
         elif isinstance(pattern, URLResolver):
             new_parent_namespaces = parent_namespaces.copy()
             if pattern.namespace:
                 new_parent_namespaces.append(pattern.namespace)
 
-            paths_info = {**paths_info, **_get_reverse_map(pattern, new_parent_namespaces)}
-
+            paths_info = defaultdict(PathInfo, **paths_info, **_get_reverse_map(pattern, new_parent_namespaces))
     return paths_info
