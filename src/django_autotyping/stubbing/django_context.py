@@ -17,6 +17,8 @@ from .codemods.utils import to_pascal
 
 @dataclass(eq=True, frozen=True)
 class PathArguments:
+    """Describes the available arguments for a specific Django view."""
+
     arguments: frozenset[tuple[str, bool]] = field(default_factory=frozenset)
 
     def __len__(self) -> int:
@@ -45,6 +47,13 @@ class PathArguments:
 
 @dataclass(eq=True, frozen=True)
 class PathInfo:
+    """Describes the set of available arguments for a Django view.
+
+    At its core, this class holds a set of the possible combinations of arguments for a view.
+    If multiple views are registered with the same name, a call to `reverse` can match any of
+    these views depending on the provided arguments and the order they appear in the URL patterns list.
+    """
+
     arguments_set: frozenset[PathArguments] = field(default_factory=frozenset)
 
     @property
@@ -133,7 +142,7 @@ class DjangoStubbingContext:
     @property
     def viewnames_lookups(self) -> defaultdict[str, PathInfo]:
         """A mapping between viewnames to be used with `reverse` and the available lookup arguments."""
-        return _get_reverse_map(get_resolver())
+        return _get_paths_infos(get_resolver())
 
     def is_duplicate(self, model: ModelType) -> bool:
         """Whether the model has a duplicate name with another model in a different app."""
@@ -162,7 +171,7 @@ class DjangoStubbingContext:
         )
 
 
-def _get_reverse_map(
+def _get_paths_infos(
     url_resolver: URLResolver,
     parent_namespaces: list[str] | None = None,
 ) -> defaultdict[str, PathInfo]:
@@ -180,11 +189,14 @@ def _get_reverse_map(
 
             for possibility, _, defaults, _ in reverse_entries:
                 for _, params in possibility:
+                    # TODO should `defaults` really be taken into account?
+                    # something weird is happening in `_reverse_with_prefix`:
+                    # if any(kwargs.get(k, v) != v for k, v in defaults.items()): skip candidate
                     paths_info[key] = paths_info[key].with_new_arguments({k: (k not in defaults) for k in params})
         elif isinstance(pattern, URLResolver):
             new_parent_namespaces = parent_namespaces.copy()
             if pattern.namespace:
                 new_parent_namespaces.append(pattern.namespace)
 
-            paths_info = defaultdict(PathInfo, **paths_info, **_get_reverse_map(pattern, new_parent_namespaces))
+            paths_info = defaultdict(PathInfo, **paths_info, **_get_paths_infos(pattern, new_parent_namespaces))
     return paths_info

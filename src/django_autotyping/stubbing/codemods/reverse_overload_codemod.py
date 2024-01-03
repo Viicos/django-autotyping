@@ -98,7 +98,9 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
                 overloads.insert(0, overload_)
                 continue
 
-            for use_args in (True, False):
+            use_args_options = (True, False) if self.stub_settings.allow_reverse_args else (False,)
+
+            for use_args in use_args_options:
                 args_param = get_param(overload_, "args")
                 if use_args:
                     annotation = helpers.parse_template_expression(path_info.get_args_annotation())
@@ -117,6 +119,7 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
                 else:
                     annotation = helpers.parse_template_expression(path_info.get_kwargs_annotation())
 
+                    # Add the TypedDict definition if not already done:
                     for path_args in path_info.arguments_set:
                         typeddict_name = path_args.typeddict_name
                         if typeddict_name in seen_typeddict_names:
