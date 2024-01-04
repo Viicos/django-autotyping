@@ -9,9 +9,9 @@ from libcst.codemod import CodemodContext
 
 from django_autotyping.typing import FlattenFunctionDef
 
-from .base import StubVisitorBasedCodemod
+from .base import InsertAfterImportsVisitor, StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import TypedDictField, build_typed_dict, get_param
+from .utils import TypedDictAttribute, build_typed_dict, get_param
 
 if TYPE_CHECKING:
     from ..django_context import DjangoStubbingContext
@@ -36,14 +36,11 @@ class QueryLookupsOverloadCodemod(StubVisitorBasedCodemod):
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
         self.add_model_imports()
+        model_typed_dicts = _build_model_kwargs(self.django_context.models)
+        InsertAfterImportsVisitor.insert_after_imports(context, model_typed_dicts)
 
         # Even though these are most likely included, we import them for safety:
         self.add_typing_imports(["TypedDict", "TypeVar", "Unpack", "overload"])
-
-    def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
-        """Add the necessary `TypedDict` definitions after imports."""
-        model_typed_dicts = _build_model_kwargs(self.django_context.models)
-        return self.insert_after_imports(updated_node, model_typed_dicts)
 
     @m.call_if_inside(BASE_MANAGER_CLASS_DEF_MATCHER)
     @m.leave(GET_MODEL_DEF_MATCHER)
@@ -84,8 +81,8 @@ def _build_model_kwargs(django_context: DjangoStubbingContext) -> list[cst.Class
         class_defs.append(
             build_typed_dict(
                 f"{model_name}CreateKwargs",
-                fields=[
-                    TypedDictField(
+                attributes=[
+                    TypedDictAttribute(
                         field.name,
                         annotation="Any",
                         docstring=getattr(field, "help_text", None) or None,

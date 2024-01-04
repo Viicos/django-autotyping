@@ -109,6 +109,18 @@ This is why, by default, this configuration attribute defaults to `True`. If set
 
 _Affected rules: `DJAS002`._
 
+## `ALLOW_REVERSE_ARGS`
+
+_Default value: `False`._
+
+Whether type checking should be added to the `args` argument of `reverse`.
+
+By default, this is set to `False` to avoid having too many overloads being generated.
+Moreover, only tuples can be type checked, and most people are using lists for this argument.
+Instead, it is recommended to use the `kwargs` argument.
+
+_Affected rules: `DJAS011`._
+
 # Available rules
 
 ## Add type hints to related fields (`DJAS001`)
@@ -180,6 +192,23 @@ reveal_type(apps.get_model("app_name", "ModelName"))  # Revealed type is type[Mo
 
 Stub files affected:
 - `django-stubs/apps/registry.pyi`
+
+</details>
+
+## Add type hints to `Apps.get_model` (`DJAS010`)
+
+A codemod that will add overloads to the `reverse` function.
+
+```python
+reverse("my-view-name", kwargs={...})  # `kwargs` is typed with a `TypedDict`, providing auto-completion.
+```
+
+<details>
+
+<summary>Technical details</summary>
+
+Stub files affected:
+- `django-stubs/urls/base.pyi`
 
 </details>
 

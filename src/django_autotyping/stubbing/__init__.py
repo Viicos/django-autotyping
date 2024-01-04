@@ -25,7 +25,7 @@ def post_migrate_receiver(sender: AppConfig, **kwargs: Any):
     # Temp hack: the apps object from the post_migrate signal is a `StatesApp` instance, missing some data we need
     from django.apps import apps
 
-    django_context = DjangoStubbingContext(apps)
+    django_context = DjangoStubbingContext(apps, settings)
 
     run_codemods(codemods, django_context, stub_settings)
 

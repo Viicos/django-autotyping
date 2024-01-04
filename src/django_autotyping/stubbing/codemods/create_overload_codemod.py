@@ -11,9 +11,9 @@ from libcst.metadata import ScopeProvider
 
 from django_autotyping.typing import FlattenFunctionDef
 
-from .base import StubVisitorBasedCodemod
+from .base import InsertAfterImportsVisitor, StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import TypedDictField, build_typed_dict, get_param
+from .utils import TypedDictAttribute, build_typed_dict, get_param
 
 if TYPE_CHECKING:
     from ..django_context import DjangoStubbingContext
@@ -49,14 +49,11 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
         self.add_model_imports()
+        model_typed_dicts = _build_model_kwargs(self.django_context, self.stub_settings.model_fields_optional)
+        InsertAfterImportsVisitor.insert_after_imports(context, model_typed_dicts)
 
         # Even though these are most likely included, we import them for safety:
         self.add_typing_imports(["TypedDict", "TypeVar", "Unpack", "overload"])
-
-    def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
-        """Add the necessary `TypedDict` definitions after imports."""
-        model_typed_dicts = _build_model_kwargs(self.django_context, self.stub_settings.model_fields_optional)
-        return self.insert_after_imports(updated_node, model_typed_dicts)
 
     def mutate_FunctionDef(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef) -> FlattenFunctionDef:
         cls_name = self.get_metadata(ScopeProvider, original_node).name
@@ -123,8 +120,8 @@ def _build_model_kwargs(django_context: DjangoStubbingContext, all_optional: boo
         class_defs.append(
             build_typed_dict(
                 f"{model_name}CreateKwargs",
-                fields=[
-                    TypedDictField(
+                attributes=[
+                    TypedDictAttribute(
                         field.name,
                         annotation="Any",
                         docstring=getattr(field, "help_text", None) or None,

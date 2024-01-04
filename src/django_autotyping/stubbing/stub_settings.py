@@ -59,6 +59,16 @@ class StubSettings:
     Affected rules: `DJAS002`.
     """
 
+    allow_reverse_args: bool = False
+    """Whether type checking should be added to the `args` argument of `reverse`.
+
+    By default, this is set to `False` to avoid having too many overloads being generated.
+    Moreover, only tuples can be type checked, and most people are using lists for this argument.
+    Instead, it is recommended to use the `kwargs` argument.
+
+    Affected rules: `DJAS011`.
+    """
+
     @classmethod
     def from_django_settings(cls, settings: LazySettings):
         autotyping_settings: dict[str, Any] = getattr(settings, "AUTOTYPING", {})
