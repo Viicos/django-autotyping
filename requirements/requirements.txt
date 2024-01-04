@@ -6,7 +6,7 @@
 #
 asgiref==3.7.2
     # via django
-django==4.2.8
+django==4.2.9
     # via -r requirements/requirements.in
 libcst==1.1.0
     # via -r requirements/requirements.in

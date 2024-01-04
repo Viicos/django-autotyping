@@ -28,9 +28,10 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
-    "libcst>=0.4.10",
+    "colorama>=0.4.6; platform_system == 'Windows'",
     "django",
-    "colorama>=0.4.6; platform_system == 'Windows'"
+    "libcst>=0.4.10",
+    "typing-extensions>=4.2.0; python_version < '3.11'",
 ]
 dynamic = ["version"]
 

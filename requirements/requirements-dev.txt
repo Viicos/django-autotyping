@@ -8,7 +8,7 @@ asgiref==3.7.2
     # via
     #   -c requirements/requirements.txt
     #   django
-django==4.2.8
+django==4.2.9
     # via
     #   -c requirements/requirements.txt
     #   django-stubs

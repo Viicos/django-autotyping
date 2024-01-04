@@ -8,11 +8,11 @@ from .forward_relation_typing_codemod import ForwardRelationTypingCodemod
 
 __all__ = ("ForwardRelationTypingCodemod", "rules", "gather_codemods")
 
-rules = [
+RulesT = Literal["DJA001"]
+
+rules: list[tuple[RulesT, type[VisitorBasedCodemodCommand]]] = [
     ("DJA001", ForwardRelationTypingCodemod),
 ]
-
-RulesT = Literal["DJA001"]
 
 
 def gather_codemods(disabled: Container[RulesT]) -> list[type[VisitorBasedCodemodCommand]]:
