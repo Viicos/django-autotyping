@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Container, Literal
 
-from libcst.codemod import VisitorBasedCodemodCommand
+from django_autotyping._compat import TypeAlias
 
 from .base import StubVisitorBasedCodemod
 from .create_overload_codemod import CreateOverloadCodemod
@@ -20,7 +20,9 @@ __all__ = (
     "ReverseOverloadCodemod",
 )
 
-rules = [
+RulesT: TypeAlias = Literal["DJAS001", "DJAS002", "DJAS010", "DJAS011"]
+
+rules: list[tuple[RulesT, type[StubVisitorBasedCodemod]]] = [
     ("DJAS001", ForwardRelationOverloadCodemod),
     ("DJAS002", CreateOverloadCodemod),
     # ("DJAS003", QueryLookupsOverloadCodemod),
@@ -28,8 +30,6 @@ rules = [
     ("DJAS011", ReverseOverloadCodemod),
 ]
 
-RulesT = Literal["DJAS001", "DJAS002", "DJAS010", "DJAS011"]
 
-
-def gather_codemods(disabled: Container[RulesT]) -> list[type[VisitorBasedCodemodCommand]]:
-    return [rule[1] for rule in rules if rule[0] not in disabled]
+def gather_codemods(ignore: Container[RulesT]) -> list[type[StubVisitorBasedCodemod]]:
+    return [rule[1] for rule in rules if rule[0] not in ignore]

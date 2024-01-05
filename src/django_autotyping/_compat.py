@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 
 if sys.version_info >= (3, 11):
-    from typing import Unpack
+    from typing import Required, Self, TypeAlias, Unpack
 else:
-    from typing_extensions import Unpack  # noqa: F401
+    from typing_extensions import Required, Self, TypeAlias, Unpack  # noqa: F401
 
 
 def is_relative_to(path: Path, other: Path) -> bool:

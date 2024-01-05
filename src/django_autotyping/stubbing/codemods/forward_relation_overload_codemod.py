@@ -84,7 +84,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
         for model in self.django_context.models:
             model_name = self.django_context.get_model_name(model)
             allow_plain_model_name = (
-                self.stub_settings.allow_plain_model_references and not self.django_context.is_duplicate(model)
+                self.stubs_settings.allow_plain_model_references and not self.django_context.is_duplicate(model)
             )
 
             # sets `self: ManyToManyField[model_name, _Through]`
@@ -140,7 +140,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
         for model in self.django_context.models:
             model_name = self.django_context.get_model_name(model)
             allow_plain_model_name = (
-                self.stub_settings.allow_plain_model_references and not self.django_context.is_duplicate(model)
+                self.stubs_settings.allow_plain_model_references and not self.django_context.is_duplicate(model)
             )
 
             for nullable in (True, False):  # Order matters!
@@ -149,7 +149,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
                 overload = overload_init.with_deep_changes(
                     old_node=self_param,
                     annotation=_build_self_annotation(
-                        field_cls_name, model_name, nullable, self.stub_settings.allow_none_set_type
+                        field_cls_name, model_name, nullable, self.stubs_settings.allow_none_set_type
                     ),
                 )
 
@@ -194,7 +194,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
             model_overload_ = model_overload.with_deep_changes(
                 old_node=self_param,
                 annotation=_build_self_annotation(
-                    field_cls_name, "_ModelT", nullable, self.stub_settings.allow_none_set_type
+                    field_cls_name, "_ModelT", nullable, self.stubs_settings.allow_none_set_type
                 ),
             )
 

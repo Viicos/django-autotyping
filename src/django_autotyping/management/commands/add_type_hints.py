@@ -1,39 +1,39 @@
 from pathlib import Path
 from typing import Any
 
-from django.apps import apps
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandParser
 
 from django_autotyping._compat import Unpack
 from django_autotyping.app_settings import AutotypingSettings
-from django_autotyping.stubbing import create_stubs, gather_codemods, run_codemods
-from django_autotyping.stubbing.codemods import RulesT, rules
-from django_autotyping.stubbing.django_context import DjangoStubbingContext
+from django_autotyping.codemodding.codemods import RulesT, rules
 
 from ._utils import BaseOptions, dir_path
 
 at_settings = AutotypingSettings(settings)
-stubs_settings = at_settings.stubs_generation
 
 
 class CommandOptions(BaseOptions):
-    stubs_dir: Path
+    project_dir: Path
     diff: bool
     ignore: list[RulesT] | None
-    type_checking_block: bool
-    assume_class_getitem: bool
 
 
 class Command(BaseCommand):
-    help = "Generate customized type stubs for your Django application."
+    help = "Add type annotations to your Django code."
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
-            "--stubs-dir",
+            "--project-dir",
             type=dir_path,
-            help="The directory of the local type stubs.",
-            default=at_settings.stubs_generation.stubs_dir,
+            help="The directory of the project, where code modifications should be applied.",
+            default=at_settings.code_generation.project_path,
+        )
+        parser.add_argument(
+            "--diff",
+            action="store_true",
+            help="Show changes to be applied instead of modifying existing files.",
+            default=at_settings.code_generation.diff,
         )
         parser.add_argument(
             "--ignore",
@@ -44,8 +44,4 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Unpack[CommandOptions]) -> str | None:
-        create_stubs(options["stubs_dir"])
-        codemods = gather_codemods(options["ignore"])
-
-        django_context = DjangoStubbingContext(apps, settings)
-        run_codemods(codemods, django_context, stubs_settings)
+        print(options)

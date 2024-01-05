@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING, Iterator
 
 from django.conf import ENVIRONMENT_VARIABLE as DJANGO_SETTINGS_MODULE_ENV_KEY
 
-from ..compat import is_relative_to
+from django_autotyping._compat import is_relative_to
+
 from .models import ModelInfo
 
 if TYPE_CHECKING:
