@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "django-autotyping"
-description = "Django typing helper"
+description = "Automatically add type hints for Django powered applications."
 authors = [
     {name = "Viicos", email = "65306057+Viicos@users.noreply.github.com"}
 ]
@@ -28,10 +28,11 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
-    "libcst>=0.4.10",
     "django",
-    "colorama>=0.4.6; platform_system == 'Windows'"
+    "libcst>=0.4.10",
+    "typing-extensions>=4.2.0; python_version < '3.11'",
 ]
+license = {file = "LICENSE"}
 dynamic = ["version"]
 
 [project.urls]

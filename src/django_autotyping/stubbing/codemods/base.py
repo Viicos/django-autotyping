@@ -8,8 +8,9 @@ from libcst.codemod import CodemodContext, ContextAwareTransformer, VisitorBased
 from libcst.codemod.visitors import AddImportsVisitor
 
 if TYPE_CHECKING:
+    from django_autotyping.app_settings import StubsGenerationSettings
+
     from ..django_context import DjangoStubbingContext
-    from ..stub_settings import StubSettings
 
 
 TYPING_EXTENSIONS_NAMES = ["Unpack", "Required", "NotRequired"]
@@ -56,14 +57,14 @@ class InsertAfterImportsVisitor(ContextAwareTransformer):
 
 
 class StubVisitorBasedCodemod(VisitorBasedCodemodCommand):
-    """The base class for all codemods that apply to stub files."""
+    """The base class for all codemods used for custom stub files."""
 
     STUB_FILES: ClassVar[set[str]]
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
         self.django_context = cast("DjangoStubbingContext", context.scratch["django_context"])
-        self.stub_settings = cast("StubSettings", context.scratch["stub_settings"])
+        self.stubs_settings = cast("StubsGenerationSettings", context.scratch["stubs_settings"])
 
     def add_model_imports(self) -> None:
         """Add the defined models in the Django context as imports to the current file."""
@@ -84,7 +85,7 @@ class StubVisitorBasedCodemod(VisitorBasedCodemodCommand):
 
     def transform_module(self, tree: cst.Module) -> cst.Module:
         # LibCST automatically runs `AddImportsVisitor` and `RemoveImportsVisitor`,
-        # but this is hardcoded.
+        # but this is hardcoded. So we manually add our visitor.
         tree = super().transform_module(tree)
         transform = InsertAfterImportsVisitor
 

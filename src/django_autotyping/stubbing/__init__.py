@@ -1,48 +1,33 @@
+from __future__ import annotations
+
 import shutil
 import site
 from pathlib import Path
-from typing import Any
 
 import libcst as cst
-from django.apps import AppConfig
-from django.apps.registry import Apps
-from django.conf import settings
 from libcst.codemod import CodemodContext
 
-from .codemods import StubVisitorBasedCodemod, gather_codemods
+from django_autotyping.app_settings import StubsGenerationSettings
+
+from .codemods import StubVisitorBasedCodemod
 from .django_context import DjangoStubbingContext
-from .stub_settings import StubSettings
-
-
-def post_migrate_receiver(sender: AppConfig, **kwargs: Any):
-    stub_settings = StubSettings.from_django_settings(settings)
-
-    create_stubs(stub_settings.stubs_dir)
-
-    codemods = gather_codemods(stub_settings.disabled_rules)
-
-    apps: Apps = kwargs["apps"]
-    # Temp hack: the apps object from the post_migrate signal is a `StatesApp` instance, missing some data we need
-    from django.apps import apps
-
-    django_context = DjangoStubbingContext(apps, settings)
-
-    run_codemods(codemods, django_context, stub_settings)
 
 
 def run_codemods(
     codemods: list[type[StubVisitorBasedCodemod]],
     django_context: DjangoStubbingContext,
-    stub_settings: StubSettings,
+    stubs_settings: StubsGenerationSettings,
 ) -> None:
+    django_stubs_dir = stubs_settings.source_stubs_dir or _get_django_stubs_dir()
+
     for codemod in codemods:
         for stub_file in codemod.STUB_FILES:
             context = CodemodContext(
-                filename=stub_file, scratch={"django_context": django_context, "stub_settings": stub_settings}
+                filename=stub_file, scratch={"django_context": django_context, "stub_settings": stubs_settings}
             )
             transformer = codemod(context)
-            source_file = _get_django_stubs_dir() / stub_file  # TODO should be an argument to this func
-            target_file = stub_settings.stubs_dir / "django-stubs" / stub_file
+            source_file = django_stubs_dir / stub_file
+            target_file = stubs_settings.local_stubs_dir / "django-stubs" / stub_file
 
             input_code = source_file.read_text(encoding="utf-8")
             input_module = cst.parse_module(input_code)
@@ -58,11 +43,12 @@ def _get_django_stubs_dir() -> Path:
             return path
 
 
-def create_stubs(stubs_dir: Path):
+def create_local_django_stubs(stubs_dir: Path, source_django_stubs: Path | None = None):
+    """Copy the installed `django-stubs` package into the specified local stubs directory."""
     stubs_dir.mkdir(exist_ok=True)
-    django_stubs_dir = _get_django_stubs_dir()
+    source_django_stubs = source_django_stubs or _get_django_stubs_dir()
     if not (stubs_dir / "django-stubs").is_dir():
-        shutil.copytree(django_stubs_dir, stubs_dir / "django-stubs")
+        shutil.copytree(source_django_stubs, stubs_dir / "django-stubs")
 
     # for stub_file in django_stubs_dir.glob("**/*.pyi"):
     #     # Make file relative to site packages, results in `Path("django-stubs/path/to/file.pyi")`

@@ -98,7 +98,7 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
                 overloads.insert(0, overload_)
                 continue
 
-            use_args_options = (True, False) if self.stub_settings.allow_reverse_args else (False,)
+            use_args_options = (True, False) if self.stubs_settings.allow_reverse_args else (False,)
 
             for use_args in use_args_options:
                 args_param = get_param(overload_, "args")

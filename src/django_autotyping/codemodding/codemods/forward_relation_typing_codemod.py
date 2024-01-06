@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Union, cast  # Old style Union required on decorated methods, see Instagram/LibCST#870.
+from typing import Union  # Old style Union required on decorated methods, see Instagram/LibCST#870.
 
 import libcst as cst
 import libcst.matchers as m
 from django.db.models.fields.related import RECURSIVE_RELATIONSHIP_CONSTANT
-from libcst.codemod import CodemodContext, VisitorBasedCodemodCommand
+from libcst.codemod import CodemodContext
 from libcst.codemod.visitors import AddImportsVisitor
 from libcst.metadata import ScopeProvider
 from libcst.metadata.scope_provider import ClassScope
 
-from ..django_utils import DjangoCodemodContext
 from ..models import ModelInfo
+from .base import BaseVisitorBasedCodemod
 
 ASSIGN_FOREIGN_FIELD_MATCHER = m.Assign(
     value=m.Call(
@@ -34,7 +34,7 @@ ASSIGN_FOREIGN_FIELD_MATCHER = m.Assign(
 BARE_CLASS_DEF_MATCHER = m.ClassDef(bases=m.OneOf([m.AtMostN(n=0)], [m.Arg(value=m.Name(value="object"))]))
 
 
-class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
+class ForwardRelationTypingCodemod(BaseVisitorBasedCodemod):
     """A codemod that will add type annotations to forward relations.
 
     Rule identifier: `DJA001`.
@@ -69,7 +69,6 @@ class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
-        self.django_context = cast(DjangoCodemodContext, context.scratch["django_context"])
         self.model_infos = [
             model_info
             for model_info in self.django_context.model_infos
@@ -129,7 +128,7 @@ class ForwardRelationTypingCodemod(VisitorBasedCodemodCommand):
                     obj=class_ref,
                 )
 
-        if forward_relation.has_class_getitem or self.django_context.assume_class_getitem:
+        if forward_relation.has_class_getitem or self.code_generation_settings.assume_class_getitem:
             # We can parametrize the field directly, we won't get runtime TypeErrors
             annotation_str = f'"{class_ref}"'  # forward ref used here as it will be evaluated at runtime
             slice = cst.SubscriptElement(slice=cst.Index(value=cst.SimpleString(value=annotation_str)))

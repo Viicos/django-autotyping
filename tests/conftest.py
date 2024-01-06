@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from django_autotyping.codemodding.django_utils import DjangoCodemodContext
+from django_autotyping.codemodding.django_context import DjangoCodemodContext
 
 
 @pytest.fixture(scope="session")
