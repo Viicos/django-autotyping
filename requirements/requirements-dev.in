@@ -2,4 +2,3 @@
 django-stubs
 mypy
 ruff
-types-colorama

@@ -33,8 +33,6 @@ tomli==2.0.1
     # via
     #   django-stubs
     #   mypy
-types-colorama==0.4.15.12
-    # via -r requirements/requirements-dev.in
 types-pytz==2023.3.1.1
     # via django-stubs
 types-pyyaml==6.0.12.12
