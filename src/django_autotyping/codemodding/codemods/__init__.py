@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-from typing import Container, Literal
+__all__ = ("ForwardRelationTypingCodemod", "RulesT", "rules", "gather_codemods")
 
-from libcst.codemod import VisitorBasedCodemodCommand
+from typing import Container, Literal
 
 from django_autotyping._compat import TypeAlias
 
+from .base import BaseVisitorBasedCodemod
 from .forward_relation_typing_codemod import ForwardRelationTypingCodemod
-
-__all__ = ("ForwardRelationTypingCodemod", "rules", "gather_codemods")
 
 RulesT: TypeAlias = Literal["DJA001"]
 
-rules: list[tuple[RulesT, type[VisitorBasedCodemodCommand]]] = [
+rules: list[tuple[RulesT, type[BaseVisitorBasedCodemod]]] = [
     ("DJA001", ForwardRelationTypingCodemod),
 ]
 
 
-def gather_codemods(ignore: Container[RulesT]) -> list[type[VisitorBasedCodemodCommand]]:
+def gather_codemods(ignore: Container[RulesT]) -> list[type[BaseVisitorBasedCodemod]]:
     return [rule[1] for rule in rules if rule[0] not in ignore]

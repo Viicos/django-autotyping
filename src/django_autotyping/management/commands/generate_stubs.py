@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 
@@ -7,22 +9,20 @@ from django.core.management.base import BaseCommand, CommandParser
 
 from django_autotyping._compat import Unpack
 from django_autotyping.app_settings import AutotypingSettings
-from django_autotyping.stubbing import create_stubs, gather_codemods, run_codemods
-from django_autotyping.stubbing.codemods import RulesT, rules
+from django_autotyping.stubbing import create_local_django_stubs, run_codemods
+from django_autotyping.stubbing.codemods import RulesT, gather_codemods, rules
 from django_autotyping.stubbing.django_context import DjangoStubbingContext
 
 from ._utils import BaseOptions, dir_path
 
-at_settings = AutotypingSettings(settings)
+at_settings = AutotypingSettings.from_django_settings(settings)
 stubs_settings = at_settings.stubs_generation
 
 
 class CommandOptions(BaseOptions):
-    stubs_dir: Path
+    local_stubs_dir: Path
     diff: bool
     ignore: list[RulesT] | None
-    type_checking_block: bool
-    assume_class_getitem: bool
 
 
 class Command(BaseCommand):
@@ -30,10 +30,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
-            "--stubs-dir",
+            "-s",
+            "--local-stubs-dir",
             type=dir_path,
             help="The directory of the local type stubs.",
-            default=at_settings.stubs_generation.stubs_dir,
+            required=at_settings.stubs_generation.local_stubs_dir is None,
+            default=at_settings.stubs_generation.local_stubs_dir,
         )
         parser.add_argument(
             "--ignore",
@@ -43,8 +45,8 @@ class Command(BaseCommand):
             default=at_settings.ignore,
         )
 
-    def handle(self, *args: Any, **options: Unpack[CommandOptions]) -> str | None:
-        create_stubs(options["stubs_dir"])
+    def handle(self, *args: Any, **options: Unpack[CommandOptions]) -> None:
+        create_local_django_stubs(options["local_stubs_dir"], stubs_settings.source_stubs_dir)
         codemods = gather_codemods(options["ignore"])
 
         django_context = DjangoStubbingContext(apps, settings)

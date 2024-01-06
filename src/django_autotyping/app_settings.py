@@ -14,7 +14,7 @@ from .typing import AutotypingSettingsDict, RulesT
 class CodeGenerationSettings:
     """Configuration for adding type annotations to Django user code."""
 
-    project_path: Path | None = None
+    project_dir: Path | None = None
     """The directory of the project, where code modifications should be applied."""
 
     diff: bool = False
@@ -35,8 +35,13 @@ class CodeGenerationSettings:
 class StubsGenerationSettings:
     """Configuration for dynamic stubs generation."""
 
-    stubs_dir: Path | None = None
+    local_stubs_dir: Path | None = None
     """The directory of the local type stubs."""
+
+    source_stubs_dir: Path | None = None
+    """The directory of the source `django-stubs` to be used. Will default
+    to the first entry in site packages.
+    """
 
     allow_plain_model_references: bool = True
     """Whether string references in the form of `{model_name}` should be generated in overloads.
@@ -108,7 +113,6 @@ class AutotypingSettings:
         autotyping_settings: AutotypingSettingsDict = deepcopy(getattr(settings, "AUTOTYPING", {}))
         stubs_generation_dct = autotyping_settings.pop("STUBS_GENERATION", {})
         code_generation_dct = autotyping_settings.pop("CODE_GENERATION", {})
-
         return cls(
             **{k.lower(): v for k, v in autotyping_settings.items()},
             stubs_generation=StubsGenerationSettings(**{k.lower(): v for k, v in stubs_generation_dct.items()}),

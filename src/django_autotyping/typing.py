@@ -24,7 +24,8 @@ class AutotypingSettingsDict(TypedDict, total=False):
     """A utility `TypedDict` to be used in user code settings.
 
     >>> AUTOTYPING: AutotypingSettingsDict = {
-    >>>     "STUBS_DIR": Path(...)
+    >>>     "IGNORE": ["DJA001"],
+    >>>     ...
     >>> }
     """
 
@@ -41,8 +42,13 @@ class AutotypingSettingsDict(TypedDict, total=False):
 class StubsGenerationSettingsDict(TypedDict, total=False):
     """Configuration for dynamic stubs generation."""
 
-    STUBS_DIR: Path | None
+    LOCAL_STUBS_DIR: Path | None
     """The directory of the local type stubs. If not set, this setting must be set as a CLI argument."""
+
+    SOURCE_STUBS_DIR: Path | None
+    """The directory of the source `django-stubs` to be used. Will default
+    to the first entry in site packages.
+    """
 
     ALLOW_PLAIN_MODEL_REFERENCES: bool
     """Whether string references in the form of `{model_name}` should be generated in overloads.
@@ -98,7 +104,7 @@ class StubsGenerationSettingsDict(TypedDict, total=False):
 class CodeGenerationSettingsDict(TypedDict, total=False):
     """Configuration for adding type annotations to Django user code."""
 
-    PROJECT_PATH: Path | None
+    PROJECT_DIR: Path | None
     """The directory of your project, where code modifications should be applied.
     If not set, this setting must be set as a CLI argument.
     """
