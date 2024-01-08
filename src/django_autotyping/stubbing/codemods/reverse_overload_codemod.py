@@ -44,7 +44,7 @@ REVERSE_DEF_MATCHER = m.FunctionDef(name=m.Name("reverse"))
 
 
 class ReverseOverloadCodemod(StubVisitorBasedCodemod):
-    """A codemod that will add overloads to the `reverse` function.
+    """A codemod that will add overloads to the [`reverse`][django.urls.reverse] function.
 
     Rule identifier: `DJAS011`.
     """
@@ -98,7 +98,7 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
                 overloads.insert(0, overload_)
                 continue
 
-            use_args_options = (True, False) if self.stubs_settings.allow_reverse_args else (False,)
+            use_args_options = (True, False) if self.stubs_settings.ALLOW_REVERSE_ARGS else (False,)
 
             for use_args in use_args_options:
                 args_param = get_param(overload_, "args")

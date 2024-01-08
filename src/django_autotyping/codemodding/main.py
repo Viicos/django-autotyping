@@ -33,7 +33,7 @@ def run_codemods(
 
         output_module = transformer.transform_module(output_module)
 
-    if code_generation_settings.type_checking_block:
+    if code_generation_settings.TYPE_CHECKING_BLOCK:
         newly_imported_items = get_newly_imported_items(output_module, input_module)
         if newly_imported_items:
             context = CodemodContext()

@@ -16,12 +16,11 @@ from django_autotyping.stubbing.django_context import DjangoStubbingContext
 from ._utils import BaseOptions, dir_path
 
 at_settings = AutotypingSettings.from_django_settings(settings)
-stubs_settings = at_settings.stubs_generation
+stubs_settings = at_settings.STUBS_GENERATION
 
 
 class CommandOptions(BaseOptions):
     local_stubs_dir: Path
-    diff: bool
     ignore: list[RulesT] | None
 
 
@@ -34,19 +33,19 @@ class Command(BaseCommand):
             "--local-stubs-dir",
             type=dir_path,
             help="The directory of the local type stubs.",
-            required=at_settings.stubs_generation.local_stubs_dir is None,
-            default=at_settings.stubs_generation.local_stubs_dir,
+            required=at_settings.STUBS_GENERATION.LOCAL_STUBS_DIR is None,
+            default=at_settings.STUBS_GENERATION.LOCAL_STUBS_DIR,
         )
         parser.add_argument(
             "--ignore",
             choices=[rule[0] for rule in rules],
             nargs="*",
             help="Rules to be ignored.",
-            default=at_settings.ignore,
+            default=at_settings.IGNORE,
         )
 
     def handle(self, *args: Any, **options: Unpack[CommandOptions]) -> None:
-        create_local_django_stubs(options["local_stubs_dir"], stubs_settings.source_stubs_dir)
+        create_local_django_stubs(options["local_stubs_dir"], stubs_settings.SOURCE_STUBS_DIR)
         codemods = gather_codemods(options["ignore"])
 
         django_context = DjangoStubbingContext(apps, settings)

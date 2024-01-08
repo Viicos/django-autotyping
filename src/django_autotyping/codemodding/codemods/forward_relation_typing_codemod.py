@@ -128,7 +128,7 @@ class ForwardRelationTypingCodemod(BaseVisitorBasedCodemod):
                     obj=class_ref,
                 )
 
-        if forward_relation.has_class_getitem or self.code_generation_settings.assume_class_getitem:
+        if forward_relation.has_class_getitem or self.code_generation_settings.ASSUME_CLASS_GETITEM:
             # We can parametrize the field directly, we won't get runtime TypeErrors
             annotation_str = f'"{class_ref}"'  # forward ref used here as it will be evaluated at runtime
             slice = cst.SubscriptElement(slice=cst.Index(value=cst.SimpleString(value=annotation_str)))
