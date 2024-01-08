@@ -21,7 +21,7 @@ GET_MODEL_DEF_MATCHER = m.FunctionDef(name=m.Name("get_model"))
 
 
 class GetModelOverloadCodemod(StubVisitorBasedCodemod):
-    """A codemod that will add overloads to the `apps.get_model` method.
+    """A codemod that will add overloads to the [`apps.get_model`][django.apps.apps.get_model] method.
 
     Rule identifier: `DJAS010`.
     """

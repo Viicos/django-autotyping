@@ -14,16 +14,16 @@ from .typing import AutotypingSettingsDict, RulesT
 class CodeGenerationSettings:
     """Configuration for adding type annotations to Django user code."""
 
-    project_dir: Path | None = None
+    PROJECT_DIR: Path | None = None
     """The directory of the project, where code modifications should be applied."""
 
-    diff: bool = False
+    DIFF: bool = False
     """Show changes to be applied instead of modifying existing files."""
 
-    type_checking_block: bool = True
+    TYPE_CHECKING_BLOCK: bool = True
     """Whether newly added imports should be in an `if TYPE_CHECKING` block (avoids circular imports)."""
 
-    assume_class_getitem: bool = False
+    ASSUME_CLASS_GETITEM: bool = False
     """Whether generic classes in stubs files but not at runtime should be assumed to have a
     `__class_getitem__` method. This can be achieved by using `django-stubs-ext` or manually.
 
@@ -35,15 +35,15 @@ class CodeGenerationSettings:
 class StubsGenerationSettings:
     """Configuration for dynamic stubs generation."""
 
-    local_stubs_dir: Path | None = None
-    """The directory of the local type stubs."""
+    LOCAL_STUBS_DIR: Path | None = None
+    """The directory of the local type stubs. If not set, this setting must be set as a CLI argument."""
 
-    source_stubs_dir: Path | None = None
+    SOURCE_STUBS_DIR: Path | None = None
     """The directory of the source `django-stubs` to be used. Will default
     to the first entry in site packages.
     """
 
-    allow_plain_model_references: bool = True
+    ALLOW_PLAIN_MODEL_REFERENCES: bool = True
     """Whether string references in the form of `{model_name}` should be generated in overloads.
 
     If set to `True`, both `{model_name}` and `{model_name}.{app_label}` are allowed
@@ -52,8 +52,8 @@ class StubsGenerationSettings:
     Affected rules: `DJAS001`.
     """
 
-    allow_none_set_type: bool = False
-    """Whether to allow having the `__set__` type variable set to `None`.
+    ALLOW_NONE_SET_TYPE: bool = False
+    """Whether to allow having the `__set__` type variable set to `None`, even if the field is not nullable.
 
     While Django allows setting most model instance fields to any value (before saving),
     it is generally a bad practice to do so. However, it might be beneficial to allow `None`
@@ -65,26 +65,30 @@ class StubsGenerationSettings:
     Affected rules: `DJAS001`.
     """
 
-    model_fields_optional: bool = True
+    MODEL_FIELDS_OPTIONAL: bool = True
     """Whether all model fields should be considered optional when creating model instances.
 
     This affects the following signatures:
-    - `Manager.create/acreate`
+
+    - [`Manager.create/acreate`][django.db.models.Manager]
     - `__init__` methods of models
 
     A lot can happen behind the scenes when instantiating models. Even if a field doesn't have
     a default value provided, the database could have triggers implemented that would provide one.
     This is why, by default, this configuration attribute defaults to `True`. If set to `False`,
     `django-autotyping` will try its best to determine required fields, namely by checking if:
-    - the field can be `null`
+
+    - the field can be [`null`][django.db.models.Field.null]
     - the field has a default or a database default value set
-    - the field is a subclass of `DateField` and has `auto_now` or `auto_now_add` set to `True`.
+    - the field is a subclass of [`DateField`][django.db.models.DateField] and has
+      [`auto_now`][django.db.models.DateField.auto_now] or [`auto_now_add`][django.db.models.DateField.auto_now_add]
+      set to `True`.
 
     Affected rules: `DJAS002`.
     """
 
-    allow_reverse_args: bool = False
-    """Whether type checking should be added to the `args` argument of `reverse`.
+    ALLOW_REVERSE_ARGS: bool = False
+    """Whether type checking should be added to the `args` argument of [`reverse`][django.urls.reverse].
 
     By default, this is set to `False` to avoid having too many overloads being generated.
     Moreover, only tuples can be type checked, and most people are using lists for this argument.
@@ -98,13 +102,13 @@ class StubsGenerationSettings:
 class AutotypingSettings:
     """A class holding the django-autotyping configuration."""
 
-    ignore: list[RulesT] = field(default_factory=list)
+    IGNORE: list[RulesT] = field(default_factory=list)
     """A list of ignored rules."""
 
-    stubs_generation: StubsGenerationSettings = field(default_factory=StubsGenerationSettings)
+    STUBS_GENERATION: StubsGenerationSettings = field(default_factory=StubsGenerationSettings)
     """Stub related settings."""
 
-    code_generation: CodeGenerationSettings = field(default_factory=CodeGenerationSettings)
+    CODE_GENERATION: CodeGenerationSettings = field(default_factory=CodeGenerationSettings)
     """Code generation related settings."""
 
     @classmethod
@@ -114,7 +118,7 @@ class AutotypingSettings:
         stubs_generation_dct = autotyping_settings.pop("STUBS_GENERATION", {})
         code_generation_dct = autotyping_settings.pop("CODE_GENERATION", {})
         return cls(
-            **{k.lower(): v for k, v in autotyping_settings.items()},
-            stubs_generation=StubsGenerationSettings(**{k.lower(): v for k, v in stubs_generation_dct.items()}),
-            code_generation=CodeGenerationSettings(**{k.lower(): v for k, v in code_generation_dct.items()}),
+            **autotyping_settings,
+            STUBS_GENERATION=StubsGenerationSettings(**stubs_generation_dct),
+            CODE_GENERATION=CodeGenerationSettings(**code_generation_dct),
         )

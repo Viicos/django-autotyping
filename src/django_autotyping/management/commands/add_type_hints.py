@@ -35,21 +35,21 @@ class Command(BaseCommand):
             "--project-dir",
             type=dir_path,
             help="The directory of the project, where code modifications should be applied.",
-            required=at_settings.code_generation.project_dir is None,
-            default=at_settings.code_generation.project_dir,
+            required=at_settings.CODE_GENERATION.PROJECT_DIR is None,
+            default=at_settings.CODE_GENERATION.PROJECT_DIR,
         )
         parser.add_argument(
             "--diff",
             action="store_true",
             help="Show changes to be applied instead of modifying existing files.",
-            default=at_settings.code_generation.diff,
+            default=at_settings.CODE_GENERATION.DIFF,
         )
         parser.add_argument(
             "--ignore",
             choices=[rule[0] for rule in rules],
             nargs="*",
             help="Rules to be ignored.",
-            default=at_settings.ignore,
+            default=at_settings.IGNORE,
         )
 
     def _colored_diff(self, lines: Iterable[str]) -> None:
@@ -73,7 +73,7 @@ class Command(BaseCommand):
 
         for filename in model_filenames:
             intput_source = Path(filename).read_text("utf-8")
-            output_source = run_codemods(codemods, django_context, at_settings.code_generation, filename)
+            output_source = run_codemods(codemods, django_context, at_settings.CODE_GENERATION, filename)
             if intput_source != output_source:
                 if options["diff"]:
                     lines = difflib.unified_diff(

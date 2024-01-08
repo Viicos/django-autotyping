@@ -1,7 +1,5 @@
 # django-autotyping
 
-Automatically add type hints for Django powered applications.
-
 `django-autotyping` generates custom [type stubs](https://typing.readthedocs.io/en/latest/source/stubs.html) based on your current Django application, enhancing your development experience
 by providing auto-completions and accurate type checking.
 

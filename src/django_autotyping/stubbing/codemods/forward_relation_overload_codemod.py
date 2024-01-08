@@ -35,17 +35,15 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
 
     Rule identifier: `DJAS001`.
 
-    This codemod is meant to be applied on the `django-stubs/db/models/fields/related.pyi` stub file.
-
     ```python
     class ForeignKey(ForeignObject[_ST, _GT]):
         # For each model, will add two overloads:
-        # - 1st: `null: Literal[True]`, which will parametrize `ForeignKey` get types as `Optional`.
+        # - 1st: `null: Literal[True]`, which will parametrize `ForeignKey` types as `Optional`.
         # - 2nd: `null: Literal[False] = ...` (the default).
         # `to` is annotated as a `Literal`, with two values: {app_label}.{model_name} and {model_name}.
         @overload
         def __init__(
-            self: ForeignKey[MyModel | None, MyModel | None],
+            self: ForeignKey[MyModel | Combinable | None, MyModel | None],
             to: Literal["MyModel", "myapp.MyModel"],
             ...
         ) -> None: ...
@@ -83,9 +81,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
 
         for model in self.django_context.models:
             model_name = self.django_context.get_model_name(model)
-            allow_plain_model_name = (
-                self.stubs_settings.allow_plain_model_references and not self.django_context.is_duplicate(model)
-            )
+            allow_plain_model_name = self.stubs_settings.ALLOW and not self.django_context.is_duplicate(model)
 
             # sets `self: ManyToManyField[model_name, _Through]`
             self_param = get_param(overload_init, "self")
@@ -139,9 +135,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
         # For each model, create two overloads, depending on the `null` value:
         for model in self.django_context.models:
             model_name = self.django_context.get_model_name(model)
-            allow_plain_model_name = (
-                self.stubs_settings.allow_plain_model_references and not self.django_context.is_duplicate(model)
-            )
+            allow_plain_model_name = self.stubs_settings.ALLOW and not self.django_context.is_duplicate(model)
 
             for nullable in (True, False):  # Order matters!
                 # sets `self: FieldName[<set_type>, <get_type>]`
@@ -149,7 +143,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
                 overload = overload_init.with_deep_changes(
                     old_node=self_param,
                     annotation=_build_self_annotation(
-                        field_cls_name, model_name, nullable, self.stubs_settings.allow_none_set_type
+                        field_cls_name, model_name, nullable, self.stubs_settings.ALLOW_NONE_SET_TYPE
                     ),
                 )
 
@@ -194,7 +188,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
             model_overload_ = model_overload.with_deep_changes(
                 old_node=self_param,
                 annotation=_build_self_annotation(
-                    field_cls_name, "_ModelT", nullable, self.stubs_settings.allow_none_set_type
+                    field_cls_name, "_ModelT", nullable, self.stubs_settings.ALLOW_NONE_SET_TYPE
                 ),
             )
 
