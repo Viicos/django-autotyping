@@ -1,11 +1,31 @@
 site_name: "Django Autotyping"
 site_description: "Automatically add type hints for Django powered applications."
+repo_url: https://github.com/Viicos/django-autotyping
+repo_name: Viicos/django-autotyping
+edit_uri: edit/main/docs/
 watch: [mkdocs.yml, src/django_autotyping, docs]
 
 theme:
   name: material
   features:
+    - content.action.view
     - content.code.copy
+  palette:
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      primary: green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      primary: green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    view: material/eye
+    repo: fontawesome/brands/github
 
 nav:
   - Home:
