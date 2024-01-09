@@ -52,12 +52,12 @@ AUTOTYPING = {
 > To get typing and auto-completion support, you can make use of the `AutotypingSettingsDict` helper:
 >
 >   ```python
->  from django_autotyping.typing import AutotypingSettingsDict
+>   from django_autotyping.typing import AutotypingSettingsDict
 >
->    AUTOTYPING: AutotypingSettingsDict = {
->        ...
->    }
->    ```
+>   AUTOTYPING: AutotypingSettingsDict = {
+>       ...
+>   }
+>   ```
 
 `django-autotyping` provides several linting rules, identified with the pattern `DJA00X` or `DJAS00X`. Rules can be disabled
 using the `IGNORE` setting value.
