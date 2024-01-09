@@ -74,7 +74,7 @@ def build_typed_dict(
 ) -> cst.SimpleStatementLine | cst.ClassDef:
     """Build a `TypedDict` class definition.
 
-    If one of the attribute's name is not a valid Python identifier, the alternative inlined syntax
+    If one of the attribute's name is not a valid Python identifier, the alternative functional syntax
     will be used (a `SimpleStatementLine` will be created instead of a `ClassDef`).
 
     Args:
@@ -84,9 +84,9 @@ def build_typed_dict(
         leadind_line: Whether an empty leading line should be added before the class definition.
 
     """
-    inlined = any(not attr.name.isidentifier() for attr in attributes)
+    functional = any(not attr.name.isidentifier() for attr in attributes)
     leading_lines = [cst.EmptyLine(indent=False)] if leading_line else []
-    if not inlined:
+    if not functional:
         body: list[cst.SimpleStatementLine] = []
 
         for attr in attributes:
@@ -115,7 +115,7 @@ def build_typed_dict(
             leading_lines=leading_lines,
         )
 
-    # If some attributes aren't Python identifiers, we use the inlined form:
+    # If some attributes aren't Python identifiers, we use the functional form:
     # name = TypedDict("name", {"x": int, "y": int})
     return cst.SimpleStatementLine(
         body=[
