@@ -24,6 +24,11 @@ class GetModelOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to the [`apps.get_model`][django.apps.apps.get_model] method.
 
     Rule identifier: `DJAS010`.
+
+    ```python
+    reveal_type(apps.get_model("app_name.ModelName"))  # Revealed type is type[ModelName]
+    reveal_type(apps.get_model("app_name", "ModelName"))  # Revealed type is type[ModelName]
+    ```
     """
 
     STUB_FILES = {"apps/registry.pyi"}

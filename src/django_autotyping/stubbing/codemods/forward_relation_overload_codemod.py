@@ -33,22 +33,55 @@ INIT_DEF_MATCHER = m.FunctionDef(name=m.Name("__init__"))
 class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to the `__init__` methods of related fields.
 
-    Rule identifier: `DJAS001`.
+    **Rule identifier**: `DJAS001`.
+
+    **Related settings**:
+
+    - [`ALLOW_PLAIN_MODEL_REFERENCES`][django_autotyping.app_settings.StubsGenerationSettings.ALLOW_PLAIN_MODEL_REFERENCES]
+    - [`ALLOW_NONE_SET_TYPE`][django_autotyping.app_settings.StubsGenerationSettings.ALLOW_NONE_SET_TYPE]
+
+    This will provide auto-completion when using [`ForeignKey`][django.db.models.ForeignKey],
+    [`OneToOneField`][django.db.models.OneToOneField] and [`ManyToManyField`][django.db.models.ManyToManyField]
+    with string references to a model, and accurate type checking when accessing the field attribute
+    from a model instance.
 
     ```python
-    class ForeignKey(ForeignObject[_ST, _GT]):
-        # For each model, will add two overloads:
-        # - 1st: `null: Literal[True]`, which will parametrize `ForeignKey` types as `Optional`.
-        # - 2nd: `null: Literal[False] = ...` (the default).
-        # `to` is annotated as a `Literal`, with two values: {app_label}.{model_name} and {model_name}.
-        @overload
-        def __init__(
-            self: ForeignKey[MyModel | Combinable | None, MyModel | None],
-            to: Literal["MyModel", "myapp.MyModel"],
-            ...
-        ) -> None: ...
+    class MyModel(models.Model):
+        field = models.ForeignKey(
+            "myapp.Other",
+            on_delete=models.CASCADE,
+        )
+        nullable = models.OneToOneField(
+            "myapp.Other",
+            on_delete=models.CASCADE,
+            null=True,
+        )
+    reveal_type(MyModel().field)  # Revealed type is "Other"
+    reveal_type(MyModel().nullable)  # Revealed type is "Other | None"
     ```
-    """
+
+    !!! info "Usage with VSCode"
+        Auto-completion might not always work as expected, see this
+        [issue](https://github.com/microsoft/pylance-release/issues/4428).
+
+
+    ??? abstract "Implementation"
+        The following is a snippet of the produced overloads:
+
+        ```python
+        class ForeignKey(ForeignObject[_ST, _GT]):
+            # For each model, will add two overloads:
+            # - 1st: `null: Literal[True]`, which will parametrize `ForeignKey` types as `Optional`.
+            # - 2nd: `null: Literal[False] = ...` (the default).
+            # `to` is annotated as a `Literal`, with two values: {app_label}.{model_name} and {model_name}.
+            @overload
+            def __init__(
+                self: ForeignKey[MyModel | Combinable | None, MyModel | None],
+                to: Literal["MyModel", "myapp.MyModel"],
+                ...
+            ) -> None: ...
+        ```
+    """  # noqa: E501
 
     METADATA_DEPENDENCIES = {ScopeProvider}
     STUB_FILES = {"db/models/fields/related.pyi"}

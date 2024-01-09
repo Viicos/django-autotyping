@@ -40,7 +40,20 @@ INIT_DEF_MATCHER = m.FunctionDef(name=m.Name("__init__"))
 class CreateOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to methods creating an instance of a model.
 
-    Rule identifier: `DJAS002`.
+    **Rule identifier**: `DJAS002`.
+
+    **Related settings**:
+
+    -[`MODEL_FIELDS_OPTIONAL`][django_autotyping.app_settings.StubsGenerationSettings.MODEL_FIELDS_OPTIONAL].
+
+    ```python
+    MyModel(...)  # Signature is provided.
+    MyModel.objects.create(...)  # Signature is provided.
+    ```
+
+    ??? abstract "Implementation"
+        This codemod makes use of the [PEP 692][pep-0692]. If your type checker/LSP supports it,
+        documentation is provided for each field if [`help_text`][django.db.models.Field.help_text] was set.
     """
 
     METADATA_DEPENDENCIES = {ScopeProvider}

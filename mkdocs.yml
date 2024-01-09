@@ -17,6 +17,8 @@ nav:
     - API:
       - 'Dynamic stubs':
         - Rules: api/dynamic_stubs/rules.md
+      - 'Explicit type hints':
+        - Rules: api/explicit_type_hints/rules.md
       - Typing: api/typing.md
     - Changelog: changelog.md
 
@@ -42,8 +44,11 @@ plugins:
           paths: [src]
           import:
             - https://docs.python.org/3/objects.inv
-            - https://docs.djangoproject.com/en/dev/_objects
+            - url: https://docs.djangoproject.com/en/dev/_objects
+              domains: [std,py]
             - url: https://typing.readthedocs.io/en/latest/objects.inv
               domains: [std]
             - url: https://mypy.readthedocs.io/en/stable/objects.inv
+              domains: [std]
+            - url: https://peps.python.org/objects.inv
               domains: [std]

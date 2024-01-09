@@ -37,7 +37,12 @@ BARE_CLASS_DEF_MATCHER = m.ClassDef(bases=m.OneOf([m.AtMostN(n=0)], [m.Arg(value
 class ForwardRelationTypingCodemod(BaseVisitorBasedCodemod):
     """A codemod that will add type annotations to forward relations.
 
-    Rule identifier: `DJA001`.
+    **Rule identifier**: `DJA001`.
+
+    !!! warning "Outdated"
+        This codemod is outdated and does not play well with [`django-stubs`](https://github.com/typeddjango/django-stubs).
+        Instead, it is recommended to use the corresponding dynamic stub rule
+        ([`DJAS001`][django_autotyping.stubbing.codemods.forward_relation_overload_codemod.ForwardRelationOverloadCodemod]).
 
     ```python
     from typing import TYPE_CHECKING

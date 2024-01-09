@@ -27,7 +27,7 @@ Through `pip`:
 pip install django-autotyping
 ```
 
-To make use of the dynamic stubs feature, you will also need to install `django-stubs`:
+To make use of the dynamic stubs feature, you will also need to install [`django-stubs`](https://github.com/typeddjango/django-stubs):
 
 ```sh
 pip install django-stubs
@@ -35,7 +35,8 @@ pip install django-stubs
 
 ## Configuration
 
-As any Django application, you will need to add `django_autotyping` to your `INSTALLED_APPS` (preferably in your development or local settings, if you already have them separated).
+As any Django application, you will need to add `django_autotyping` to your [`INSTALLED_APPS`][INSTALLED_APPS]
+(preferably in your development or local settings, if you already have them separated).
 
 The application is configurable through the `AUTOTYPING` dict:
 
@@ -59,7 +60,7 @@ AUTOTYPING = {
     }
     ```
 
-`django-autotyping` provides several linting rules, identified with the pattern `DJA00X` or `DJAS00X`. Some can be disabled
+`django-autotyping` provides several linting rules, identified with the pattern `DJA00X` or `DJAS00X`. Rules can be disabled
 using the `IGNORE` setting value.
 
 For a complete list of available configuration values, refer to the usage section of [dynamic stubs][dynamic-stubs] and [explicit type hints][explicit-type-hints].

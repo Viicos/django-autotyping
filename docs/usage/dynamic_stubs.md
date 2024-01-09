@@ -38,6 +38,7 @@ AUTOTYPING = {
 
 ::: django_autotyping.app_settings.StubsGenerationSettings
     options:
+        show_source: false
         members_order: source
         inherited_members: true
         signature_crossrefs: true

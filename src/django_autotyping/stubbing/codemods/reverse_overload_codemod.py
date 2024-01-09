@@ -46,7 +46,15 @@ REVERSE_DEF_MATCHER = m.FunctionDef(name=m.Name("reverse"))
 class ReverseOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to the [`reverse`][django.urls.reverse] function.
 
-    Rule identifier: `DJAS011`.
+    **Rule identifier**: `DJAS011`.
+
+    **Related settings**:
+
+    - [`ALLOW_REVERSE_ARGS`][django_autotyping.app_settings.StubsGenerationSettings.ALLOW_REVERSE_ARGS].
+
+    ```python
+    reverse("my-view-name", kwargs={...})  # `kwargs` is typed with a `TypedDict`, providing auto-completion.
+    ```
     """
 
     STUB_FILES = {"urls/base.pyi"}
