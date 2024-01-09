@@ -1,0 +1,54 @@
+site_name: "Django Autotyping"
+site_description: "Automatically add type hints for Django powered applications."
+watch: [mkdocs.yml, src/django_autotyping, docs]
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+
+nav:
+  - Home:
+    - Index: index.md
+    - Context: context.md
+    - Usage:
+      - 'Dynamic stubs': usage/dynamic_stubs.md
+      - 'Explicit type hints': usage/explicit_type_hints.md
+    - API:
+      - 'Dynamic stubs':
+        - Rules: api/dynamic_stubs/rules.md
+      - 'Explicit type hints':
+        - Rules: api/explicit_type_hints/rules.md
+      - Typing: api/typing.md
+    - Changelog: changelog.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          import:
+            - https://docs.python.org/3/objects.inv
+            - url: https://docs.djangoproject.com/en/dev/_objects
+              domains: [std,py]
+            - url: https://typing.readthedocs.io/en/latest/objects.inv
+              domains: [std]
+            - url: https://mypy.readthedocs.io/en/stable/objects.inv
+              domains: [std]
+            - url: https://peps.python.org/objects.inv
+              domains: [std]

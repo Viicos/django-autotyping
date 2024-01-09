@@ -40,7 +40,20 @@ INIT_DEF_MATCHER = m.FunctionDef(name=m.Name("__init__"))
 class CreateOverloadCodemod(StubVisitorBasedCodemod):
     """A codemod that will add overloads to methods creating an instance of a model.
 
-    Rule identifier: `DJAS002`.
+    **Rule identifier**: `DJAS002`.
+
+    **Related settings**:
+
+    -[`MODEL_FIELDS_OPTIONAL`][django_autotyping.app_settings.StubsGenerationSettings.MODEL_FIELDS_OPTIONAL].
+
+    ```python
+    MyModel(...)  # Signature is provided.
+    MyModel.objects.create(...)  # Signature is provided.
+    ```
+
+    ??? abstract "Implementation"
+        This codemod makes use of the [PEP 692][pep-0692]. If your type checker/LSP supports it,
+        documentation is provided for each field if [`help_text`][django.db.models.Field.help_text] was set.
     """
 
     METADATA_DEPENDENCIES = {ScopeProvider}
@@ -49,7 +62,7 @@ class CreateOverloadCodemod(StubVisitorBasedCodemod):
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)
         self.add_model_imports()
-        model_typed_dicts = _build_model_kwargs(self.django_context, self.stubs_settings.model_fields_optional)
+        model_typed_dicts = _build_model_kwargs(self.django_context, self.stubs_settings.MODEL_FIELDS_OPTIONAL)
         InsertAfterImportsVisitor.insert_after_imports(context, model_typed_dicts)
 
         # Even though these are most likely included, we import them for safety:
@@ -125,7 +138,7 @@ def _build_model_kwargs(django_context: DjangoStubbingContext, all_optional: boo
                         field.name,
                         annotation="Any",
                         docstring=getattr(field, "help_text", None) or None,
-                        required=not all_optional and not django_context.is_optional(field),
+                        required=not all_optional and not django_context.get_field_nullability(field),
                     )
                     for field in cast(list[Field], model._meta._get_fields(reverse=False))
                 ],

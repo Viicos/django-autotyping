@@ -23,10 +23,12 @@ RulesT: TypeAlias = Literal["DJA001", "DJAS001", "DJAS002", "DJAS010", "DJAS011"
 class AutotypingSettingsDict(TypedDict, total=False):
     """A utility `TypedDict` to be used in user code settings.
 
-    >>> AUTOTYPING: AutotypingSettingsDict = {
-    >>>     "IGNORE": ["DJA001"],
-    >>>     ...
-    >>> }
+    ```python
+    AUTOTYPING: AutotypingSettingsDict = {
+        "IGNORE": ["DJA001"],
+        ...
+    }
+    ```
     """
 
     IGNORE: list[RulesT]
@@ -60,7 +62,7 @@ class StubsGenerationSettingsDict(TypedDict, total=False):
     """
 
     ALLOW_NONE_SET_TYPE: bool
-    """Whether to allow having the `__set__` type variable set to `None`.
+    """Whether to allow having the `__set__` type variable set to `None`, even if the field is not nullable.
 
     While Django allows setting most model instance fields to any value (before saving),
     it is generally a bad practice to do so. However, it might be beneficial to allow `None`
@@ -76,6 +78,7 @@ class StubsGenerationSettingsDict(TypedDict, total=False):
     """Whether all model fields should be considered optional when creating model instances.
 
     This affects the following signatures:
+
     - `Manager.create/acreate`
     - `__init__` methods of models
 
@@ -83,6 +86,7 @@ class StubsGenerationSettingsDict(TypedDict, total=False):
     a default value provided, the database could have triggers implemented that would provide one.
     This is why, by default, this configuration attribute defaults to `True`. If set to `False`,
     `django-autotyping` will try its best to determine required fields, namely by checking if:
+
     - the field can be `null`
     - the field has a default or a database default value set
     - the field is a subclass of `DateField` and has `auto_now` or `auto_now_add` set to `True`.

@@ -37,7 +37,12 @@ BARE_CLASS_DEF_MATCHER = m.ClassDef(bases=m.OneOf([m.AtMostN(n=0)], [m.Arg(value
 class ForwardRelationTypingCodemod(BaseVisitorBasedCodemod):
     """A codemod that will add type annotations to forward relations.
 
-    Rule identifier: `DJA001`.
+    **Rule identifier**: `DJA001`.
+
+    !!! warning "Outdated"
+        This codemod is outdated and does not play well with [`django-stubs`](https://github.com/typeddjango/django-stubs).
+        Instead, it is recommended to use the corresponding dynamic stub rule
+        ([`DJAS001`][django_autotyping.stubbing.codemods.forward_relation_overload_codemod.ForwardRelationOverloadCodemod]).
 
     ```python
     from typing import TYPE_CHECKING
@@ -128,7 +133,7 @@ class ForwardRelationTypingCodemod(BaseVisitorBasedCodemod):
                     obj=class_ref,
                 )
 
-        if forward_relation.has_class_getitem or self.code_generation_settings.assume_class_getitem:
+        if forward_relation.has_class_getitem or self.code_generation_settings.ASSUME_CLASS_GETITEM:
             # We can parametrize the field directly, we won't get runtime TypeErrors
             annotation_str = f'"{class_ref}"'  # forward ref used here as it will be evaluated at runtime
             slice = cst.SubscriptElement(slice=cst.Index(value=cst.SimpleString(value=annotation_str)))
