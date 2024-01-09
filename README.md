@@ -6,7 +6,7 @@ a custom IDE or mypy plugin:
 - generates custom [type stubs](https://typing.readthedocs.io/en/latest/source/stubs.html#stubs) based on the current state of your Django application, enhancing your development experience by providing auto-completions and accurate type checking.
 - Automatically add explicit type hints to your source code when type stubs are not enough.
 
-To understand the *why* and *how*, you can refer to the [context section](link).
+To understand the *why* and *how*, you can refer to the [context section](https://viicos.github.io/django-autotyping/context/).
 
 `django-autotyping` is built with [LibCST](https://github.com/Instagram/LibCST/).
 
@@ -62,4 +62,5 @@ AUTOTYPING = {
 `django-autotyping` provides several linting rules, identified with the pattern `DJA00X` or `DJAS00X`. Rules can be disabled
 using the `IGNORE` setting value.
 
-For a complete list of available configuration values, refer to the usage section of [dynamic stubs](link) and [explicit type hints](link).
+For a complete list of available configuration values, refer to the usage section of [dynamic stubs](https://viicos.github.io/django-autotyping/usage/dynamic_stubs/)
+and [explicit type hints](https://viicos.github.io/django-autotyping/usage/explicit_type_hints/).
