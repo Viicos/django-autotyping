@@ -1,5 +1,9 @@
 # Django Autotyping
 
+[![Python versions](https://img.shields.io/pypi/pyversions/django-autotyping.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://img.shields.io/pypi/v/django-autotyping.svg)](https://pypi.org/project/django-autotyping/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 `django-autotyping` enhances your developing experience with Django by providing accurate type hints, without the need of
 a custom IDE or mypy plugin:
 
@@ -9,10 +13,6 @@ a custom IDE or mypy plugin:
 To understand the *why* and *how*, you can refer to the [context section](https://viicos.github.io/django-autotyping/context/).
 
 `django-autotyping` is built with [LibCST](https://github.com/Instagram/LibCST/).
-
-[![Python versions](https://img.shields.io/pypi/pyversions/django-autotyping.svg)](https://www.python.org/downloads/)
-[![PyPI version](https://img.shields.io/pypi/v/django-autotyping.svg)](https://pypi.org/project/django-autotyping/)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 
 > [!WARNING]\
