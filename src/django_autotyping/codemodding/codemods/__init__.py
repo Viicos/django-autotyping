@@ -16,5 +16,5 @@ rules: list[tuple[RulesT, type[BaseVisitorBasedCodemod]]] = [
 ]
 
 
-def gather_codemods(ignore: Container[RulesT]) -> list[type[BaseVisitorBasedCodemod]]:
+def gather_codemods(ignore: Container[RulesT] = []) -> list[type[BaseVisitorBasedCodemod]]:
     return [rule[1] for rule in rules if rule[0] not in ignore]

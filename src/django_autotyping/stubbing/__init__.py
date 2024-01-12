@@ -18,16 +18,16 @@ def run_codemods(
     django_context: DjangoStubbingContext,
     stubs_settings: StubsGenerationSettings,
 ) -> None:
-    django_stubs_dir = stubs_settings.source_stubs_dir or _get_django_stubs_dir()
+    django_stubs_dir = stubs_settings.SOURCE_STUBS_DIR or _get_django_stubs_dir()
 
     for codemod in codemods:
         for stub_file in codemod.STUB_FILES:
             context = CodemodContext(
-                filename=stub_file, scratch={"django_context": django_context, "stub_settings": stubs_settings}
+                filename=stub_file, scratch={"django_context": django_context, "stubs_settings": stubs_settings}
             )
             transformer = codemod(context)
             source_file = django_stubs_dir / stub_file
-            target_file = stubs_settings.local_stubs_dir / "django-stubs" / stub_file
+            target_file = stubs_settings.LOCAL_STUBS_DIR / "django-stubs" / stub_file
 
             input_code = source_file.read_text(encoding="utf-8")
             input_module = cst.parse_module(input_code)
@@ -43,8 +43,11 @@ def _get_django_stubs_dir() -> Path:
             return path
 
 
-def create_local_django_stubs(stubs_dir: Path, source_django_stubs: Path | None = None):
-    """Copy the installed `django-stubs` package into the specified local stubs directory."""
+def create_local_django_stubs(stubs_dir: Path, source_django_stubs: Path | None = None) -> None:
+    """Copy the `django-stubs` package into the specified local stubs directory.
+
+    If `source_django_stubs` is not provided, the first entry in site packages will be used.
+    """
     stubs_dir.mkdir(exist_ok=True)
     source_django_stubs = source_django_stubs or _get_django_stubs_dir()
     if not (stubs_dir / "django-stubs").is_dir():

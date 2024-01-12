@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from libcst.codemod import CodemodTest
 
+from django_autotyping.app_settings import CodeGenerationSettings
 from django_autotyping.codemodding.codemods import ForwardRelationTypingCodemod
 from django_autotyping.codemodding.django_context import DjangoCodemodContext
 from django_autotyping.codemodding.main import run_codemods
@@ -10,7 +11,7 @@ from django_autotyping.codemodding.main import run_codemods
 expected_no_type_checking_block = """
 from django.db import models
 from django.db.models import OneToOneField
-from sampleproject.secondapp.models import ModelTwo
+from codemodtestproj.secondapp.models import ModelTwo
 
 
 class ModelOne:
@@ -36,7 +37,7 @@ from django.db.models import OneToOneField
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from sampleproject.secondapp.models import ModelTwo
+    from codemodtestproj.secondapp.models import ModelTwo
 
 
 class ModelOne:
@@ -64,17 +65,19 @@ class ModelOne(models.Model):
         (False, expected_no_type_checking_block),
     ],
 )
-@pytest.mark.xfail
-def test_dja001(sampleproject_context: DjangoCodemodContext, type_checking_block: bool, expected):
-    sampleproject_context.assume_class_getitem = True
+def test_dja001(codemodtestproj_context: DjangoCodemodContext, type_checking_block: bool, expected: str):
+    inpath = Path(__file__).parents[1] / "codemodtestproj" / "codemodtestproj" / "firstapp" / "models.py"
 
-    inpath = Path(__file__).parents[1] / "sampleproject" / "sampleproject" / "firstapp" / "models.py"
+    code_generation_settings = CodeGenerationSettings(
+        TYPE_CHECKING_BLOCK=type_checking_block,
+        ASSUME_CLASS_GETITEM=True,
+    )
 
     outcode = run_codemods(
         codemods=[ForwardRelationTypingCodemod],
-        django_context=sampleproject_context,
+        django_context=codemodtestproj_context,
+        code_generation_settings=code_generation_settings,
         filename=str(inpath),
-        type_checking_block=type_checking_block,
     )
 
     assert CodemodTest.make_fixture_data(expected) == CodemodTest.make_fixture_data(outcode)

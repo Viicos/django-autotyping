@@ -1,3 +1,5 @@
 -c requirements.txt
+mypy
+pyright
 pytest
 tox
