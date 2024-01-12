@@ -68,7 +68,7 @@ ignore = [
     "PLR0913",
 ]
 src = ["src"]
-exclude = ["tests/codemodtestproj", "tests/stubstestproj"]
+exclude = ["tests/codemodtestproj", "tests/stubstestproj", "tests/stubbing/test_stubs.py"]
 target-version = "py38"
 
 [tool.ruff.isort]
