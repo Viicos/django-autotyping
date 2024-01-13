@@ -54,6 +54,10 @@ tomli==2.0.1
     #   pytest
     #   tox
 tox==4.11.4
+    # via
+    #   -r requirements/requirements-test.in
+    #   tox-gh-actions
+tox-gh-actions==3.2.0
     # via -r requirements/requirements-test.in
 typing-extensions==4.9.0
     # via

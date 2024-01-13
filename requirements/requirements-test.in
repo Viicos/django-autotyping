@@ -3,3 +3,4 @@ mypy
 pyright
 pytest
 tox
+tox-gh-actions
