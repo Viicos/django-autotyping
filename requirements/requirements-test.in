@@ -1,3 +1,7 @@
 -c requirements.txt
+django-stubs
+mypy
+pyright
 pytest
 tox
+tox-gh-actions

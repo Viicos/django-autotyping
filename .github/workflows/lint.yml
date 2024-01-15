@@ -43,6 +43,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: |
+      - name: Install dependencies
+        run: |
+          pip install pip-tools
+          pip-sync requirements/requirements.txt requirements/requirements-dev.txt
+      - name: Run mypy
+        run: |
           pip install -r requirements/requirements.txt requirements/requirements-dev.txt
           mypy src/

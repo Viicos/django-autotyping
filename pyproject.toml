@@ -39,6 +39,7 @@ dynamic = ["version"]
 Homepage = "https://github.com/Viicos/django-autotyping"
 Source = "https://github.com/Viicos/django-autotyping"
 Changelog = "https://github.com/Viicos/django-autotyping/blob/main/CHANGELOG.md"
+Documentation = "https://viicos.github.io/django-autotyping/"
 
 [tool.setuptools.dynamic]
 version = {attr = "django_autotyping.__version__"}
@@ -67,7 +68,7 @@ ignore = [
     "PLR0913",
 ]
 src = ["src"]
-exclude = ["tests/sampleproject"]
+exclude = ["tests/codemodtestproj", "tests/stubstestproj", "tests/stubbing/testfiles"]
 target-version = "py38"
 
 [tool.ruff.isort]
@@ -75,3 +76,8 @@ known-first-party = ["django_autotyping"]
 
 [tool.pytest.ini_options]
 pythonpath = "src"
+norecursedirs = "tests/helpers"
+markers = [
+    "mypy: test generated stubs against mypy (deselect with '-m \"not mypy\"')",
+    "pyright: test generated stubs against pyright (deselect with '-m \"not pyright\"')",
+]

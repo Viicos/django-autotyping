@@ -114,7 +114,9 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
 
         for model in self.django_context.models:
             model_name = self.django_context.get_model_name(model)
-            allow_plain_model_name = self.stubs_settings.ALLOW and not self.django_context.is_duplicate(model)
+            allow_plain_model_name = (
+                self.stubs_settings.ALLOW_PLAIN_MODEL_REFERENCES and not self.django_context.is_duplicate(model)
+            )
 
             # sets `self: ManyToManyField[model_name, _Through]`
             self_param = get_param(overload_init, "self")
@@ -168,7 +170,9 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
         # For each model, create two overloads, depending on the `null` value:
         for model in self.django_context.models:
             model_name = self.django_context.get_model_name(model)
-            allow_plain_model_name = self.stubs_settings.ALLOW and not self.django_context.is_duplicate(model)
+            allow_plain_model_name = (
+                self.stubs_settings.ALLOW_PLAIN_MODEL_REFERENCES and not self.django_context.is_duplicate(model)
+            )
 
             for nullable in (True, False):  # Order matters!
                 # sets `self: FieldName[<set_type>, <get_type>]`

@@ -31,5 +31,9 @@ rules: list[tuple[RulesT, type[StubVisitorBasedCodemod]]] = [
 ]
 
 
-def gather_codemods(ignore: Container[RulesT]) -> list[type[StubVisitorBasedCodemod]]:
+def gather_codemods(
+    ignore: Container[RulesT] = [], include: Container[RulesT] = []
+) -> list[type[StubVisitorBasedCodemod]]:
+    if include:
+        return [rule[1] for rule in rules if rule[0] in include]
     return [rule[1] for rule in rules if rule[0] not in ignore]
