@@ -1,4 +1,5 @@
 -c requirements.txt
+django-stubs
 mypy
 pyright
 pytest

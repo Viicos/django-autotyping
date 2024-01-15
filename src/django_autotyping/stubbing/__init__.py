@@ -41,6 +41,7 @@ def _get_django_stubs_dir() -> Path:
     for dir in site.getsitepackages():
         if (path := Path(dir, "django-stubs")).is_dir():
             return path
+    raise RuntimeError("Couldn't find 'django-stubs' in any of the site packages.")
 
 
 def create_local_django_stubs(stubs_dir: Path, source_django_stubs: Path | None = None) -> None:
