@@ -15,11 +15,11 @@ TESTFILES = Path(__file__).parent / "testfiles"
 STUBSTESTPROJ = Path(__file__).parents[1].joinpath("stubstestproj").absolute()
 
 testfiles_params = pytest.mark.parametrize(
-    ["testfile", "stubs_settings"],
+    ["testfile", "rules", "stubs_settings"],
     [
-        (TESTFILES / "djas001.py", StubsGenerationSettings()),
-        (TESTFILES / "djas001_no_plain_references.py", StubsGenerationSettings(ALLOW_PLAIN_MODEL_REFERENCES=False)),
-        (TESTFILES / "djas001_allow_non_set_type.py", StubsGenerationSettings(ALLOW_NONE_SET_TYPE=True)),
+        (TESTFILES / "djas001.py", ["DJAS001"], StubsGenerationSettings()),
+        (TESTFILES / "djas001_no_plain_references.py", ["DJAS001"], StubsGenerationSettings(ALLOW_PLAIN_MODEL_REFERENCES=False)),
+        (TESTFILES / "djas001_allow_non_set_type.py", ["DJAS001"], StubsGenerationSettings(ALLOW_NONE_SET_TYPE=True)),
     ],
 )
 
@@ -49,10 +49,10 @@ def test_mypy(monkeypatch, local_stubs, stubstestproj_context, testfile: Path, s
 
 @pytest.mark.pyright
 @testfiles_params
-def test_pyright(tmp_path, local_stubs, stubstestproj_context, testfile: Path, stubs_settings: StubsGenerationSettings):
+def test_pyright(tmp_path, local_stubs, stubstestproj_context, testfile: Path, rules: list[str], stubs_settings: StubsGenerationSettings):
     stubs_settings = dataclasses.replace(stubs_settings, LOCAL_STUBS_DIR=local_stubs)
 
-    codemods = gather_codemods()
+    codemods = gather_codemods(include=rules)
     run_codemods(codemods, stubstestproj_context, stubs_settings)
 
     config_file = tmp_path / "pyrightconfig.json"
