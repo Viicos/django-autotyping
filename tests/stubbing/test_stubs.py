@@ -18,7 +18,11 @@ testfiles_params = pytest.mark.parametrize(
     ["testfile", "rules", "stubs_settings"],
     [
         (TESTFILES / "djas001.py", ["DJAS001"], StubsGenerationSettings()),
-        (TESTFILES / "djas001_no_plain_references.py", ["DJAS001"], StubsGenerationSettings(ALLOW_PLAIN_MODEL_REFERENCES=False)),
+        (
+            TESTFILES / "djas001_no_plain_references.py",
+            ["DJAS001"],
+            StubsGenerationSettings(ALLOW_PLAIN_MODEL_REFERENCES=False),
+        ),
         (TESTFILES / "djas001_allow_non_set_type.py", ["DJAS001"], StubsGenerationSettings(ALLOW_NONE_SET_TYPE=True)),
     ],
 )
@@ -33,10 +37,18 @@ def local_stubs(tmp_path) -> Path:
 @pytest.mark.xfail(reason="mypy does not support setting the MYPYPATH without specifying a module or package to test.")
 @pytest.mark.mypy
 @testfiles_params
-def test_mypy(monkeypatch, local_stubs, stubstestproj_context, testfile: Path, stubs_settings: StubsGenerationSettings):
+def test_mypy(
+    monkeypatch,
+    local_stubs,
+    stubstestproj_context,
+    # testfiles_params:
+    testfile: Path,
+    rules: list[str],
+    stubs_settings: StubsGenerationSettings,
+):
     stubs_settings = dataclasses.replace(stubs_settings, LOCAL_STUBS_DIR=local_stubs)
 
-    codemods = gather_codemods()
+    codemods = gather_codemods(include=rules)
     run_codemods(codemods, stubstestproj_context, stubs_settings)
 
     # TODO this does not work for now: https://github.com/python/mypy/issues/16775
@@ -49,7 +61,15 @@ def test_mypy(monkeypatch, local_stubs, stubstestproj_context, testfile: Path, s
 
 @pytest.mark.pyright
 @testfiles_params
-def test_pyright(tmp_path, local_stubs, stubstestproj_context, testfile: Path, rules: list[str], stubs_settings: StubsGenerationSettings):
+def test_pyright(
+    tmp_path,
+    local_stubs,
+    stubstestproj_context,
+    # testfiles_params:
+    testfile: Path,
+    rules: list[str],
+    stubs_settings: StubsGenerationSettings,
+):
     stubs_settings = dataclasses.replace(stubs_settings, LOCAL_STUBS_DIR=local_stubs)
 
     codemods = gather_codemods(include=rules)
