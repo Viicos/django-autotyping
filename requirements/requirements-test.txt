@@ -84,6 +84,7 @@ types-pyyaml==6.0.12.12
 typing-extensions==4.9.0
     # via
     #   -c requirements/requirements.txt
+    #   -r requirements/requirements-test.in
     #   asgiref
     #   django-stubs
     #   django-stubs-ext

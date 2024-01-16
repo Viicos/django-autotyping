@@ -128,7 +128,7 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
             )
 
             # sets `to: Literal["model_name", "app_label.model_name"]`
-            # (or just "app_label.model_name" if duplicate model names)
+            # (or just "app_label.model_name" if plain model names not allowed/possible)
             to_param = get_param(overload, "to")
             overload = overload.with_deep_changes(
                 old_node=to_param,
