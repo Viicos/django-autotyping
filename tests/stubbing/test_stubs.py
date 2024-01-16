@@ -20,9 +20,10 @@ STUBSTESTPROJ = Path(__file__).parents[1].joinpath("stubstestproj").absolute()
 testfiles_params = pytest.mark.parametrize(
     ["testfile", "rules", "stubs_settings"],
     [
-        (TESTFILES / "djas001.py", ["DJAS001"], StubsGenerationSettings()),
-        (TESTFILES / "djas001_no_plain_references.py", ["DJAS001"], StubsGenerationSettings(ALLOW_PLAIN_MODEL_REFERENCES=False)),  # noqa: E501
-        (TESTFILES / "djas001_allow_non_set_type.py", ["DJAS001"], StubsGenerationSettings(ALLOW_NONE_SET_TYPE=True)),
+        ("djas001.py", ["DJAS001"], StubsGenerationSettings()),
+        ("djas001_no_plain_references.py", ["DJAS001"], StubsGenerationSettings(ALLOW_PLAIN_MODEL_REFERENCES=False)),
+        ("djas001_allow_non_set_type.py", ["DJAS001"], StubsGenerationSettings(ALLOW_NONE_SET_TYPE=True)),
+        ("djas010.py", ["DJAS010"], StubsGenerationSettings()),
     ],
 )
 # fmt: on
@@ -46,6 +47,7 @@ def test_mypy(
     rules: list[str],
     stubs_settings: StubsGenerationSettings,
 ):
+    testfile = TESTFILES / testfile
     stubs_settings = dataclasses.replace(stubs_settings, LOCAL_STUBS_DIR=local_stubs)
 
     codemods = gather_codemods(include=rules)
@@ -70,6 +72,7 @@ def test_pyright(
     rules: list[str],
     stubs_settings: StubsGenerationSettings,
 ):
+    testfile = TESTFILES / testfile
     stubs_settings = dataclasses.replace(stubs_settings, LOCAL_STUBS_DIR=local_stubs)
 
     codemods = gather_codemods(include=rules)
