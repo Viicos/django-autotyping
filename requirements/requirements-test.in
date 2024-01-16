@@ -5,3 +5,4 @@ pyright
 pytest
 tox
 tox-gh-actions
+typing-extensions
