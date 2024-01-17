@@ -17,7 +17,7 @@ else:
     FlattenFunctionDef = cst.FunctionDef
 
 
-RulesT: TypeAlias = Literal["DJA001", "DJAS001", "DJAS002", "DJAS010", "DJAS011"]
+RulesT: TypeAlias = Literal["DJA001", "DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015"]
 
 
 class AutotypingSettingsDict(TypedDict, total=False):
@@ -101,7 +101,7 @@ class StubsGenerationSettingsDict(TypedDict, total=False):
     Moreover, only tuples can be type checked, and most people are using lists for this argument.
     Instead, it is recommended to use the `kwargs` argument.
 
-    Affected rules: `DJAS011`.
+    Affected rules: `DJAS015`.
     """
 
 

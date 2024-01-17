@@ -24,6 +24,7 @@ testfiles_params = pytest.mark.parametrize(
         ("djas001_no_plain_references.py", ["DJAS001"], StubsGenerationSettings(ALLOW_PLAIN_MODEL_REFERENCES=False)),
         ("djas001_allow_non_set_type.py", ["DJAS001"], StubsGenerationSettings(ALLOW_NONE_SET_TYPE=True)),
         ("djas010.py", ["DJAS010"], StubsGenerationSettings()),
+        ("djas011.py", ["DJAS011"], StubsGenerationSettings()),
     ],
 )
 # fmt: on
@@ -80,7 +81,13 @@ def test_pyright(
 
     config_file = tmp_path / "pyrightconfig.json"
     config_file.write_text(
-        json.dumps({"stubPath": str(local_stubs.absolute()), "extraPaths": [str(STUBSTESTPROJ.parent)]})
+        json.dumps(
+            {
+                "stubPath": str(local_stubs.absolute()),
+                "extraPaths": [str(STUBSTESTPROJ.parent)],
+                "reportUnnecessaryTypeIgnoreComment": True,
+            }
+        )
     )
 
     exit_code = run_pyright(["--project", str(config_file), str(testfile)])
