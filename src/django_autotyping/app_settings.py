@@ -94,7 +94,7 @@ class StubsGenerationSettings:
     Moreover, only tuples can be type checked, and most people are using lists for this argument.
     Instead, it is recommended to use the `kwargs` argument.
 
-    Affected rules: `DJAS011`.
+    Affected rules: `DJAS015`.
     """
 
 

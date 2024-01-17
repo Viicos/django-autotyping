@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "stubstestproj.accounts",
     "stubstestproj.firstapp",
     "stubstestproj.secondapp",
 ]
@@ -70,3 +71,6 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+# For DJAS011
+AUTH_USER_MODEL = "accounts.User"

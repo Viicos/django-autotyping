@@ -4,6 +4,7 @@ from typing import Container, Literal
 
 from django_autotyping._compat import TypeAlias
 
+from .auth_functions_codemod import AuthFunctionsCodemod
 from .base import StubVisitorBasedCodemod
 from .create_overload_codemod import CreateOverloadCodemod
 from .forward_relation_overload_codemod import ForwardRelationOverloadCodemod
@@ -20,14 +21,15 @@ __all__ = (
     "ReverseOverloadCodemod",
 )
 
-RulesT: TypeAlias = Literal["DJAS001", "DJAS002", "DJAS010", "DJAS011"]
+RulesT: TypeAlias = Literal["DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015"]
 
 rules: list[tuple[RulesT, type[StubVisitorBasedCodemod]]] = [
     ("DJAS001", ForwardRelationOverloadCodemod),
     ("DJAS002", CreateOverloadCodemod),
     # ("DJAS003", QueryLookupsOverloadCodemod),
     ("DJAS010", GetModelOverloadCodemod),
-    ("DJAS011", ReverseOverloadCodemod),
+    ("DJAS011", AuthFunctionsCodemod),
+    ("DJAS015", ReverseOverloadCodemod),
 ]
 
 

@@ -26,8 +26,8 @@ class GetModelOverloadCodemod(StubVisitorBasedCodemod):
     Rule identifier: `DJAS010`.
 
     ```python
-    reveal_type(apps.get_model("app_name.ModelName"))  # Revealed type is type[ModelName]
-    reveal_type(apps.get_model("app_name", "ModelName"))  # Revealed type is type[ModelName]
+    reveal_type(apps.get_model("app_name.ModelName"))  # Revealed type is "type[ModelName]"
+    reveal_type(apps.get_model("app_name", "ModelName"))  # Revealed type is "type[ModelName]"
     ```
     """
 
