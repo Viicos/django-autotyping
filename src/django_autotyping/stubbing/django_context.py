@@ -12,7 +12,7 @@ from libcst.codemod.visitors import ImportItem
 
 from django_autotyping.typing import ModelType
 
-from .codemods.utils import to_pascal
+from .codemods._utils import to_pascal
 
 
 @dataclass(eq=True, frozen=True)

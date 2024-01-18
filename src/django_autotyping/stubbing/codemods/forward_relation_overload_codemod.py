@@ -9,9 +9,9 @@ from libcst.metadata import ScopeProvider
 
 from django_autotyping.typing import FlattenFunctionDef, ModelType
 
+from ._utils import get_kw_param, get_param
 from .base import InsertAfterImportsVisitor, StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import get_kw_param, get_param
 
 MODEL_T_TYPE_VAR = helpers.parse_template_statement('_ModelT = TypeVar("_ModelT", bound=Model)')
 """A statement assigning `_ModelT = TypeVar("_ModelT", bound=Model)`."""

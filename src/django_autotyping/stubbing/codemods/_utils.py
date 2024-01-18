@@ -35,7 +35,7 @@ def to_pascal(string) -> str:
 
 
 def _indent(string: str) -> str:
-    return string.replace("\n", "\n    ")
+    return string.replace("\n", "\n    ").replace("\n    \n", "\n\n")
 
 
 @dataclass

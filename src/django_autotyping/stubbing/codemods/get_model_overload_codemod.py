@@ -7,9 +7,9 @@ from libcst.codemod import CodemodContext
 
 from django_autotyping.typing import FlattenFunctionDef
 
+from ._utils import get_param
 from .base import StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import get_param
 
 # Matchers:
 

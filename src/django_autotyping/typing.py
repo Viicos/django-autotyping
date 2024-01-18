@@ -17,7 +17,7 @@ else:
     FlattenFunctionDef = cst.FunctionDef
 
 
-RulesT: TypeAlias = Literal["DJA001", "DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015"]
+RulesT: TypeAlias = Literal["DJA001", "DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015", "DJAS016"]
 
 
 class AutotypingSettingsDict(TypedDict, total=False):

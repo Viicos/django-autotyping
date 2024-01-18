@@ -11,6 +11,7 @@ from .forward_relation_overload_codemod import ForwardRelationOverloadCodemod
 from .get_model_overload_codemod import GetModelOverloadCodemod
 from .query_lookups_overload_codemod import QueryLookupsOverloadCodemod
 from .reverse_overload_codemod import ReverseOverloadCodemod
+from .settings_codemod import SettingCodemod
 
 __all__ = (
     "StubVisitorBasedCodemod",
@@ -21,7 +22,7 @@ __all__ = (
     "ReverseOverloadCodemod",
 )
 
-RulesT: TypeAlias = Literal["DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015"]
+RulesT: TypeAlias = Literal["DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015", "DJAS016"]
 
 rules: list[tuple[RulesT, type[StubVisitorBasedCodemod]]] = [
     ("DJAS001", ForwardRelationOverloadCodemod),
@@ -30,6 +31,7 @@ rules: list[tuple[RulesT, type[StubVisitorBasedCodemod]]] = [
     ("DJAS010", GetModelOverloadCodemod),
     ("DJAS011", AuthFunctionsCodemod),
     ("DJAS015", ReverseOverloadCodemod),
+    ("DJAS016", SettingCodemod),
 ]
 
 
