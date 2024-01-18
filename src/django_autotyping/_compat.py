@@ -6,6 +6,10 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Required, Self, TypeAlias, Unpack  # noqa: F401
 
+if sys.version_info >= (3, 10):
+    from types import NoneType
+else:
+    NoneType = type(None)
 
 def is_relative_to(path: Path, other: Path) -> bool:
     if sys.version_info >= (3, 9):

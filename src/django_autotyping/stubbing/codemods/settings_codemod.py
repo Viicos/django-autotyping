@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import inspect
-from types import NoneType
 
 import libcst as cst
 import libcst.matchers as m
 from libcst import helpers
 from libcst.codemod.visitors import AddImportsVisitor
+
+from django_autotyping._compat import NoneType
 
 from ._global_settings_types import GLOBAL_SETTINGS, SettingTypingConfiguration
 from ._utils import _indent
@@ -84,12 +85,16 @@ class SettingCodemod(StubVisitorBasedCodemod):
                     if ann_str == "Any":
                         self.add_typing_imports(["Any"])
 
-                    body.append(cst.SimpleStatementLine([
-                        cst.AnnAssign(
-                            target=cst.Name(setting),
-                            annotation=cst.Annotation(helpers.parse_template_expression(ann_str))
+                    body.append(
+                        cst.SimpleStatementLine(
+                            [
+                                cst.AnnAssign(
+                                    target=cst.Name(setting),
+                                    annotation=cst.Annotation(helpers.parse_template_expression(ann_str)),
+                                )
+                            ]
                         )
-                    ]))
+                    )
 
         return updated_node.with_deep_changes(
             old_node=updated_node.body,
