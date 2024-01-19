@@ -14,7 +14,9 @@ To understand the *why* and *how*, you can refer to the [context section](https:
 
 `django-autotyping` is built with [LibCST](https://github.com/Instagram/LibCST/).
 
+<p align="center">
 ![Demo](docs/assets/demo.svg)
+</p>
 
 > [!WARNING]\
 > This project is still work in progress. It is meant to work with [`django-stubs`](https://github.com/typeddjango/django-stubs), but some improvements and changes are probably going to be
