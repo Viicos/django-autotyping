@@ -15,7 +15,7 @@ To understand the *why* and *how*, you can refer to the [context section](https:
 `django-autotyping` is built with [LibCST](https://github.com/Instagram/LibCST/).
 
 <p align="center">
-![Demo](docs/assets/demo.svg)
+  <img src="./docs/assets/demo.svg">
 </p>
 
 > [!WARNING]\
