@@ -4,16 +4,17 @@
 [![PyPI version](https://img.shields.io/pypi/v/django-autotyping.svg)](https://pypi.org/project/django-autotyping/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-`django-autotyping` enhances your developing experience with Django by providing accurate type hints, without the need of
+`django-autotyping` enhances your developing experience with Django by providing accurate type hints, without the need for
 a custom IDE or mypy plugin:
 
-- generates custom [type stubs](https://typing.readthedocs.io/en/latest/source/stubs.html#stubs) based on the current state of your Django application, enhancing your development experience by providing auto-completions and accurate type checking.
+- Generates custom [type stubs](https://typing.readthedocs.io/en/latest/source/stubs.html#stubs) based on the current state of your Django application, enhancing your development experience by providing auto-completions and accurate type checking.
 - Automatically add explicit type hints to your source code when type stubs are not enough.
 
 To understand the *why* and *how*, you can refer to the [context section](https://viicos.github.io/django-autotyping/context/).
 
 `django-autotyping` is built with [LibCST](https://github.com/Instagram/LibCST/).
 
+![Demo](docs/assets/demo.svg)
 
 > [!WARNING]\
 > This project is still work in progress. It is meant to work with [`django-stubs`](https://github.com/typeddjango/django-stubs), but some improvements and changes are probably going to be
