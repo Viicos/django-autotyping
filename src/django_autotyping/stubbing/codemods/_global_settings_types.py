@@ -935,7 +935,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "dict[str, _DatabaseSetting]",
-        "extra_definitions": [_DatabaseSetting, _DatabaseTestSetting],
+        "extra_definitions": [_DatabaseTestSetting, _DatabaseSetting],
     },
     "DATA_UPLOAD_MAX_MEMORY_SIZE": {
         "docs": dedent(
