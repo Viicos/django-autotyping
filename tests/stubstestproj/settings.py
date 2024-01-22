@@ -75,4 +75,5 @@ DATABASES = {
 # For DJAS011
 AUTH_USER_MODEL = "accounts.User"
 
+# For DJAS016
 CUSTOM_SETTING = "custom_setting"

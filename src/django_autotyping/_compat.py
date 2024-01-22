@@ -11,6 +11,7 @@ if sys.version_info >= (3, 10):
 else:
     NoneType = type(None)
 
+
 def is_relative_to(path: Path, other: Path) -> bool:
     if sys.version_info >= (3, 9):
         return path.is_relative_to(other)

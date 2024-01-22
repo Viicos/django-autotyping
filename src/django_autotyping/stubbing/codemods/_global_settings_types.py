@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from os import PathLike
 from textwrap import dedent
 from typing import Any, TypedDict
 
@@ -524,6 +525,68 @@ class _DatabaseSetting(TypedDict, total=False):
     """
 
 
+class _StorageSetting(TypedDict, total=False):
+    BACKEND: Required[str]
+
+    OPTIONS: dict[str, Any]
+
+
+class _TemplateSetting(TypedDict, total=False):
+    BACKEND: Required[str]
+    """Default: Not defined
+
+    The template backend to use. The built-in template backends are:
+
+    * ``'django.template.backends.django.DjangoTemplates'``
+    * ``'django.template.backends.jinja2.Jinja2'``
+
+    You can use a template backend that doesn't ship with Django by setting
+    ``BACKEND`` to a fully-qualified path (i.e. ``'mypackage.whatever.Backend'``).
+    """
+
+    NAME: str
+    """Default: see below
+
+    The alias for this particular template engine. It's an identifier that allows
+    selecting an engine for rendering. Aliases must be unique across all
+    configured template engines.
+
+    It defaults to the name of the module defining the engine class, i.e. the
+    next to last piece of :setting:`BACKEND <TEMPLATES-BACKEND>`, when it isn't
+    provided. For example if the backend is ``'mypackage.whatever.Backend'`` then
+    its default name is ``'whatever'``.
+    """
+
+    DIRS: list[str | PathLike[str]]
+    """Default: ``[]`` (Empty list)
+
+    Directories where the engine should look for template source files, in search
+    order.
+    """
+
+    APP_DIRS: bool
+    """Default: ``False``
+
+    Whether the engine should look for template source files inside installed
+    applications.
+
+    .. note::
+
+    The default :file:`settings.py` file created by :djadmin:`django-admin
+    startproject <startproject>` sets ``'APP_DIRS': True``.
+    """
+
+    OPTIONS: dict[str, Any]
+    """Default: ``{}`` (Empty dict)
+
+    Extra parameters to pass to the template backend. Available parameters vary
+    depending on the template backend. See
+    :class:`~django.template.backends.django.DjangoTemplates` and
+    :class:`~django.template.backends.jinja2.Jinja2` for the options of the
+    built-in backends.
+    """
+
+
 GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
     "ABSOLUTE_URL_OVERRIDES": {
         "docs": dedent(
@@ -936,6 +999,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
         ),
         "type": "dict[str, _DatabaseSetting]",
         "extra_definitions": [_DatabaseTestSetting, _DatabaseSetting],
+        "typing_imports": ["Any"],
     },
     "DATA_UPLOAD_MAX_MEMORY_SIZE": {
         "docs": dedent(
@@ -1237,6 +1301,18 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
         "type": "str",
     },
     "DEFAULT_EXCEPTION_REPORTER": {
+        "docs": dedent(
+            """
+            Default: ``'``:class:`django.views.debug.SafeExceptionReporterFilter` ``'``
+
+            Default exception reporter filter class to be used if none has been assigned to
+            the :class:`~django.http.HttpRequest` instance yet.
+            See :ref:`Filtering error reports<filtering-error-reports>`.
+            """
+        ),
+        "type": "str",
+    },
+    "DEFAULT_EXCEPTION_REPORTER_FILTER": {
         "docs": dedent(
             """
             Default: ``'``:class:`django.views.debug.SafeExceptionReporterFilter` ``'``
@@ -1900,6 +1976,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": 'Literal["Strict", "Lax", "None", False, None]',  # TODO "None" vs `None`?
+        "typing_imports": ["Literal"],
     },
     "LANGUAGE_COOKIE_SECURE": {
         "docs": dedent(
@@ -2032,5 +2109,1513 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "list[tuple[str, str]]",
+    },
+    "MEDIA_ROOT": {
+        "docs": dedent(
+            """
+            Default: ``''`` (Empty string)
+
+            Absolute filesystem path to the directory that will hold :doc:`user-uploaded
+            files </topics/files>`.
+
+            Example: ``"/var/www/example.com/media/"``
+
+            See also :setting:`MEDIA_URL`.
+
+            .. warning::
+
+                :setting:`MEDIA_ROOT` and :setting:`STATIC_ROOT` must have different
+                values. Before :setting:`STATIC_ROOT` was introduced, it was common to
+                rely or fallback on :setting:`MEDIA_ROOT` to also serve static files;
+                however, since this can have serious security implications, there is a
+                validation check to prevent it.
+            """
+        ),
+        "type": "PathLike[AnyStr]",  # TODO better type?
+        "extra_imports": [ImportItem("os", "PathLike")],
+    },
+    "MEDIA_URL": {
+        "docs": dedent(
+            """
+            Default: ``''`` (Empty string)
+
+            URL that handles the media served from :setting:`MEDIA_ROOT`, used
+            for :doc:`managing stored files </topics/files>`. It must end in a slash if set
+            to a non-empty value. You will need to :ref:`configure these files to be served
+            <serving-uploaded-files-in-development>` in both development and production
+            environments.
+
+            If you want to use ``{{ MEDIA_URL }}`` in your templates, add
+            ``'django.template.context_processors.media'`` in the ``'context_processors'``
+            option of :setting:`TEMPLATES`.
+
+            Example: ``"https://media.example.com/"``
+
+            .. warning::
+
+                There are security risks if you are accepting uploaded content from
+                untrusted users! See the security guide's topic on
+                :ref:`user-uploaded-content-security` for mitigation details.
+
+            .. warning::
+
+                :setting:`MEDIA_URL` and :setting:`STATIC_URL` must have different
+                values. See :setting:`MEDIA_ROOT` for more details.
+
+            .. note::
+
+                If :setting:`MEDIA_URL` is a relative path, then it will be prefixed by the
+                server-provided value of ``SCRIPT_NAME`` (or ``/`` if not set). This makes
+                it easier to serve a Django application in a subpath without adding an
+                extra configuration to the settings.
+            """
+        ),
+        "type": "str",
+    },
+    "MIDDLEWARE": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            A list of middleware to use. See :doc:`/topics/http/middleware`.
+            """
+        ),
+        "type": "list[str] | None",
+    },
+    "MIGRATION_MODULES": {
+        "docs": dedent(
+            """
+            Default: ``{}`` (Empty dictionary)
+
+            A dictionary specifying the package where migration modules can be found on a
+            per-app basis. The default value of this setting is an empty dictionary, but
+            the default package name for migration modules is ``migrations``.
+
+            Example::
+
+                {"blog": "blog.db_migrations"}
+
+            In this case, migrations pertaining to the ``blog`` app will be contained in
+            the ``blog.db_migrations`` package.
+
+            If you provide the ``app_label`` argument, :djadmin:`makemigrations` will
+            automatically create the package if it doesn't already exist.
+
+            When you supply ``None`` as a value for an app, Django will consider the app as
+            an app without migrations regardless of an existing ``migrations`` submodule.
+            This can be used, for example, in a test settings file to skip migrations while
+            testing (tables will still be created for the apps' models). To disable
+            migrations for all apps during tests, you can set the
+            :setting:`MIGRATE <TEST_MIGRATE>` to ``False`` instead. If
+            ``MIGRATION_MODULES`` is used in your general project settings, remember to use
+            the :option:`migrate --run-syncdb` option if you want to create tables for the
+            app.
+            """
+        ),
+        "type": "dict[str, str]",
+    },
+    "MONTH_DAY_FORMAT": {
+        "docs": dedent(
+            """
+            Default: ``'F j'``
+
+            The default formatting to use for date fields on Django admin change-list
+            pages -- and, possibly, by other parts of the system -- in cases when only the
+            month and day are displayed.
+
+            For example, when a Django admin change-list page is being filtered by a date
+            drilldown, the header for a given day displays the day and month. Different
+            locales have different formats. For example, U.S. English would say
+            "January 1," whereas Spanish might say "1 Enero."
+
+            Note that the corresponding locale-dictated format has higher precedence and
+            will be applied instead.
+
+            See :tfilter:`allowed date format strings <date>`. See also
+            :setting:`DATE_FORMAT`, :setting:`DATETIME_FORMAT`,
+            :setting:`TIME_FORMAT` and :setting:`YEAR_MONTH_FORMAT`.
+            """
+        ),
+        "type": "str",
+    },
+    "NUMBER_GROUPING": {
+        "docs": dedent(
+            """
+            Default: ``0``
+
+            Number of digits grouped together on the integer part of a number.
+
+            Common use is to display a thousand separator. If this setting is ``0``, then
+            no grouping will be applied to the number. If this setting is greater than
+            ``0``, then :setting:`THOUSAND_SEPARATOR` will be used as the separator between
+            those groups.
+
+            Some locales use non-uniform digit grouping, e.g. ``10,00,00,000`` in
+            ``en_IN``. For this case, you can provide a sequence with the number of digit
+            group sizes to be applied. The first number defines the size of the group
+            preceding the decimal delimiter, and each number that follows defines the size
+            of preceding groups. If the sequence is terminated with ``-1``, no further
+            grouping is performed. If the sequence terminates with a ``0``, the last group
+            size is used for the remainder of the number.
+
+            Example tuple for ``en_IN``::
+
+                NUMBER_GROUPING = (3, 2, 0)
+
+            Note that the locale-dictated format has higher precedence and will be applied
+            instead.
+
+            See also :setting:`DECIMAL_SEPARATOR`, :setting:`THOUSAND_SEPARATOR` and
+            :setting:`USE_THOUSAND_SEPARATOR`.
+            """
+        ),
+        "type": "int | Sequence[int]",
+        "extra_imports": [ImportItem("collections.abc", "Sequence")],
+    },
+    "PREPEND_WWW": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            Whether to prepend the "www." subdomain to URLs that don't have it. This is only
+            used if :class:`~django.middleware.common.CommonMiddleware` is installed
+            (see :doc:`/topics/http/middleware`). See also :setting:`APPEND_SLASH`.
+            """
+        ),
+        "type": "bool",
+    },
+    "ROOT_URLCONF": {
+        "docs": dedent(
+            """
+            Default: Not defined
+
+            A string representing the full Python import path to your root URLconf, for
+            example ``"mydjangoapps.urls"``. Can be overridden on a per-request basis by
+            setting the attribute ``urlconf`` on the incoming ``HttpRequest``
+            object. See :ref:`how-django-processes-a-request` for details.
+            """
+        ),
+        "type": "str",
+    },
+    "SECRET_KEY": {
+        "docs": dedent(
+            """
+            Default: ``''`` (Empty string)
+
+            A secret key for a particular Django installation. This is used to provide
+            :doc:`cryptographic signing </topics/signing>`, and should be set to a unique,
+            unpredictable value.
+
+            :djadmin:`django-admin startproject <startproject>` automatically adds a
+            randomly-generated ``SECRET_KEY`` to each new project.
+
+            Uses of the key shouldn't assume that it's text or bytes. Every use should go
+            through :func:`~django.utils.encoding.force_str` or
+            :func:`~django.utils.encoding.force_bytes` to convert it to the desired type.
+
+            Django will refuse to start if :setting:`SECRET_KEY` is not set.
+
+            .. warning::
+
+                **Keep this value secret.**
+
+                Running Django with a known :setting:`SECRET_KEY` defeats many of Django's
+                security protections, and can lead to privilege escalation and remote code
+                execution vulnerabilities.
+
+            The secret key is used for:
+
+            * All :doc:`sessions </topics/http/sessions>` if you are using
+            any other session backend than ``django.contrib.sessions.backends.cache``,
+            or are using the default
+            :meth:`~django.contrib.auth.models.AbstractBaseUser.get_session_auth_hash()`.
+            * All :doc:`messages </ref/contrib/messages>` if you are using
+            :class:`~django.contrib.messages.storage.cookie.CookieStorage` or
+            :class:`~django.contrib.messages.storage.fallback.FallbackStorage`.
+            * All :class:`~django.contrib.auth.views.PasswordResetView` tokens.
+            * Any usage of :doc:`cryptographic signing </topics/signing>`, unless a
+            different key is provided.
+
+            When a secret key is no longer set as :setting:`SECRET_KEY` or contained within
+            :setting:`SECRET_KEY_FALLBACKS` all of the above will be invalidated. When
+            rotating your secret key, you should move the old key to
+            :setting:`SECRET_KEY_FALLBACKS` temporarily. Secret keys are not used for
+            passwords of users and key rotation will not affect them.
+
+            .. note::
+
+                The default :file:`settings.py` file created by :djadmin:`django-admin
+                startproject <startproject>` creates a unique ``SECRET_KEY`` for
+                convenience.
+            """
+        ),
+        "type": "str",
+    },
+    "SECRET_KEY_FALLBACKS": {
+        "docs": dedent(
+            """
+            Default: ``[]``
+
+            A list of fallback secret keys for a particular Django installation. These are
+            used to allow rotation of the ``SECRET_KEY``.
+
+            In order to rotate your secret keys, set a new ``SECRET_KEY`` and move the
+            previous value to the beginning of ``SECRET_KEY_FALLBACKS``. Then remove the
+            old values from the end of the ``SECRET_KEY_FALLBACKS`` when you are ready to
+            expire the sessions, password reset tokens, and so on, that make use of them.
+
+            .. note::
+
+                Signing operations are computationally expensive. Having multiple old key
+                values in ``SECRET_KEY_FALLBACKS`` adds additional overhead to all checks
+                that don't match an earlier key.
+
+                As such, fallback values should be removed after an appropriate period,
+                allowing for key rotation.
+
+            Uses of the secret key values shouldn't assume that they are text or bytes.
+            Every use should go through :func:`~django.utils.encoding.force_str` or
+            :func:`~django.utils.encoding.force_bytes` to convert it to the desired type.
+            """
+        ),
+        "type": "list[str]",
+    },
+    "SECURE_CONTENT_TYPE_NOSNIFF": {
+        "docs": dedent(
+            """
+            Default: ``True``
+
+            If ``True``, the :class:`~django.middleware.security.SecurityMiddleware`
+            sets the :ref:`x-content-type-options` header on all responses that do not
+            already have it.
+            """
+        ),
+        "type": "bool",
+    },
+    "SECURE_CROSS_ORIGIN_OPENER_POLICY": {
+        "docs": dedent(
+            """
+            Default: ``'same-origin'``
+
+            Unless set to ``None``, the
+            :class:`~django.middleware.security.SecurityMiddleware` sets the
+            :ref:`cross-origin-opener-policy` header on all responses that do not already
+            have it to the value provided.
+            """
+        ),
+        "type": "str | None",
+    },
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            If ``True``, the :class:`~django.middleware.security.SecurityMiddleware` adds
+            the ``includeSubDomains`` directive to the :ref:`http-strict-transport-security`
+            header. It has no effect unless :setting:`SECURE_HSTS_SECONDS` is set to a
+            non-zero value.
+
+            .. warning::
+                Setting this incorrectly can irreversibly (for the value of
+                :setting:`SECURE_HSTS_SECONDS`) break your site. Read the
+                :ref:`http-strict-transport-security` documentation first.
+            """
+        ),
+        "type": "bool",
+    },
+    "SECURE_HSTS_PRELOAD": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            If ``True``, the :class:`~django.middleware.security.SecurityMiddleware` adds
+            the ``preload`` directive to the :ref:`http-strict-transport-security`
+            header. It has no effect unless :setting:`SECURE_HSTS_SECONDS` is set to a
+            non-zero value.
+            """
+        ),
+        "type": "bool",
+    },
+    "SECURE_HSTS_SECONDS": {
+        "docs": dedent(
+            """
+            Default: ``0``
+
+            If set to a non-zero integer value, the
+            :class:`~django.middleware.security.SecurityMiddleware` sets the
+            :ref:`http-strict-transport-security` header on all responses that do not
+            already have it.
+
+            .. warning::
+                Setting this incorrectly can irreversibly (for some time) break your site.
+                Read the :ref:`http-strict-transport-security` documentation first.
+            """
+        ),
+        "type": "int",
+    },
+    "SECURE_PROXY_SSL_HEADER": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            A tuple representing an HTTP header/value combination that signifies a request
+            is secure. This controls the behavior of the request object's ``is_secure()``
+            method.
+
+            By default, ``is_secure()`` determines if a request is secure by confirming
+            that a requested URL uses ``https://``. This method is important for Django's
+            CSRF protection, and it may be used by your own code or third-party apps.
+
+            If your Django app is behind a proxy, though, the proxy may be "swallowing"
+            whether the original request uses HTTPS or not. If there is a non-HTTPS
+            connection between the proxy and Django then ``is_secure()`` would always
+            return ``False`` -- even for requests that were made via HTTPS by the end user.
+            In contrast, if there is an HTTPS connection between the proxy and Django then
+            ``is_secure()`` would always return ``True`` -- even for requests that were
+            made originally via HTTP.
+
+            In this situation, configure your proxy to set a custom HTTP header that tells
+            Django whether the request came in via HTTPS, and set
+            ``SECURE_PROXY_SSL_HEADER`` so that Django knows what header to look for.
+
+            Set a tuple with two elements -- the name of the header to look for and the
+            required value. For example::
+
+                SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+            This tells Django to trust the ``X-Forwarded-Proto`` header that comes from our
+            proxy and that the request is guaranteed to be secure (i.e., it originally came
+            in via HTTPS) when:
+
+            * the header value is ``'https'``, or
+            * its initial, leftmost value is ``'https'`` in the case of a comma-separated
+            list of protocols (e.g. ``'https,http,http'``).
+
+            You should *only* set this setting if you control your proxy or have some other
+            guarantee that it sets/strips this header appropriately.
+
+            Note that the header needs to be in the format as used by ``request.META`` --
+            all caps and likely starting with ``HTTP_``. (Remember, Django automatically
+            adds ``'HTTP_'`` to the start of x-header names before making the header
+            available in ``request.META``.)
+
+            .. warning::
+
+                **Modifying this setting can compromise your site's security. Ensure you
+                fully understand your setup before changing it.**
+
+                Make sure ALL of the following are true before setting this (assuming the
+                values from the example above):
+
+                * Your Django app is behind a proxy.
+                * Your proxy strips the ``X-Forwarded-Proto`` header from all incoming
+                requests, even when it contains a comma-separated list of protocols. In
+                other words, if end users include that header in their requests, the
+                proxy will discard it.
+                * Your proxy sets the ``X-Forwarded-Proto`` header and sends it to Django,
+                but only for requests that originally come in via HTTPS.
+
+                If any of those are not true, you should keep this setting set to ``None``
+                and find another way of determining HTTPS, perhaps via custom middleware.
+            """
+        ),
+        "type": "tuple[str, str] | None",
+    },
+    "SECURE_REDIRECT_EXEMPT": {
+        "docs": dedent(
+            """
+            Default: ``[]`` (Empty list)
+
+            If a URL path matches a regular expression in this list, the request will not be
+            redirected to HTTPS. The
+            :class:`~django.middleware.security.SecurityMiddleware` strips leading slashes
+            from URL paths, so patterns shouldn't include them, e.g.
+            ``SECURE_REDIRECT_EXEMPT = [r'^no-ssl/$', …]``. If
+            :setting:`SECURE_SSL_REDIRECT` is ``False``, this setting has no effect.
+            """
+        ),
+        "type": "list[str]",
+    },
+    "SECURE_REFERRER_POLICY": {
+        "docs": dedent(
+            """
+            Default: ``'same-origin'``
+
+            If configured, the :class:`~django.middleware.security.SecurityMiddleware` sets
+            the :ref:`referrer-policy` header on all responses that do not already have it
+            to the value provided.
+            """
+        ),
+        "type": "str",
+    },
+    "SECURE_SSL_HOST": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            If a string (e.g. ``secure.example.com``), all SSL redirects will be directed
+            to this host rather than the originally-requested host
+            (e.g. ``www.example.com``). If :setting:`SECURE_SSL_REDIRECT` is ``False``, this
+            setting has no effect.
+            """
+        ),
+        "type": "str | None",
+    },
+    "SECURE_SSL_REDIRECT": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            If ``True``, the :class:`~django.middleware.security.SecurityMiddleware`
+            :ref:`redirects <ssl-redirect>` all non-HTTPS requests to HTTPS (except for
+            those URLs matching a regular expression listed in
+            :setting:`SECURE_REDIRECT_EXEMPT`).
+
+            .. note::
+
+            If turning this to ``True`` causes infinite redirects, it probably means
+            your site is running behind a proxy and can't tell which requests are secure
+            and which are not. Your proxy likely sets a header to indicate secure
+            requests; you can correct the problem by finding out what that header is and
+            configuring the :setting:`SECURE_PROXY_SSL_HEADER` setting accordingly.
+            """
+        ),
+        "type": "bool",
+    },
+    "SERIALIZATION_MODULES": {
+        "docs": dedent(
+            """
+            Default: Not defined
+
+            A dictionary of modules containing serializer definitions (provided as
+            strings), keyed by a string identifier for that serialization type. For
+            example, to define a YAML serializer, use::
+
+                SERIALIZATION_MODULES = {"yaml": "path.to.yaml_serializer"}
+            """
+        ),
+        "type": "dict[str, str]",
+    },
+    "SERVER_EMAIL": {
+        "docs": dedent(
+            """
+            Default: ``'root@localhost'``
+
+            The email address that error messages come from, such as those sent to
+            :setting:`ADMINS` and :setting:`MANAGERS`. This address is used in the
+            ``From:`` header and can take any format valid in the chosen email sending
+            protocol.
+
+            .. admonition:: Why are my emails sent from a different address?
+
+                This address is used only for error messages. It is *not* the address that
+                regular email messages sent with :meth:`~django.core.mail.send_mail()`
+                come from; for that, see :setting:`DEFAULT_FROM_EMAIL`.
+            """
+        ),
+        "type": "str",
+    },
+    "SHORT_DATE_FORMAT": {
+        "docs": dedent(
+            """
+            Default: ``'m/d/Y'`` (e.g. ``12/31/2003``)
+
+            An available formatting that can be used for displaying date fields on
+            templates. Note that the corresponding locale-dictated format has higher
+            precedence and will be applied instead. See
+            :tfilter:`allowed date format strings <date>`.
+
+            See also :setting:`DATE_FORMAT` and :setting:`SHORT_DATETIME_FORMAT`.
+            """
+        ),
+        "type": "str",
+    },
+    "SHORT_DATETIME_FORMAT": {
+        "docs": dedent(
+            """
+            Default: ``'m/d/Y P'`` (e.g. ``12/31/2003 4 p.m.``)
+
+            An available formatting that can be used for displaying datetime fields on
+            templates. Note that the corresponding locale-dictated format has higher
+            precedence and will be applied instead. See
+            :tfilter:`allowed date format strings <date>`.
+
+            See also :setting:`DATE_FORMAT` and :setting:`SHORT_DATE_FORMAT`.
+            """
+        ),
+        "type": "str",
+    },
+    "SIGNING_BACKEND": {
+        "docs": dedent(
+            """
+            Default: ``'django.core.signing.TimestampSigner'``
+
+            The backend used for signing cookies and other data.
+
+            See also the :doc:`/topics/signing` documentation.
+            """
+        ),
+        "type": "str",
+    },
+    "SILENCED_SYSTEM_CHECKS": {
+        "docs": dedent(
+            """
+            Default: ``[]`` (Empty list)
+
+            A list of identifiers of messages generated by the system check framework
+            (i.e. ``["models.W001"]``) that you wish to permanently acknowledge and ignore.
+            Silenced checks will not be output to the console.
+
+            See also the :doc:`/ref/checks` documentation.
+            """
+        ),
+        "type": "list[str]",
+    },
+    "STORAGES": {
+        "docs": dedent(
+            """
+            Default::
+
+                {
+                    "default": {
+                        "BACKEND": "django.core.files.storage.FileSystemStorage",
+                    },
+                    "staticfiles": {
+                        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+                    },
+                }
+
+            A dictionary containing the settings for all storages to be used with Django.
+            It is a nested dictionary whose contents map a storage alias to a dictionary
+            containing the options for an individual storage.
+
+            Storages can have any alias you choose. However, there are two aliases with
+            special significance:
+
+            * ``default`` for :doc:`managing files </topics/files>`.
+            ``'``:class:`django.core.files.storage.FileSystemStorage` ``'`` is the
+            default storage engine.
+            * ``staticfiles`` for :doc:`managing static files </ref/contrib/staticfiles>`.
+            ``'``:class:`django.contrib.staticfiles.storage.StaticFilesStorage` ``'`` is
+            the default storage engine.
+
+            The following is an example ``settings.py`` snippet defining a custom file
+            storage called ``example``::
+
+                STORAGES = {
+                    # ...
+                    "example": {
+                        "BACKEND": "django.core.files.storage.FileSystemStorage",
+                        "OPTIONS": {
+                            "location": "/example",
+                            "base_url": "/example/",
+                        },
+                    },
+                }
+
+            ``OPTIONS`` are passed to the ``BACKEND`` on initialization in ``**kwargs``.
+
+            A ready-to-use instance of the storage backends can be retrieved from
+            :data:`django.core.files.storage.storages`. Use a key corresponding to the
+            backend definition in :setting:`STORAGES`.
+
+            .. admonition:: Is my value merged with the default value?
+
+                Defining this setting overrides the default value and is *not* merged with
+                it.
+            """
+        ),
+        "type": "dict[str, dict[str, _StorageSetting]]",
+        "extra_definitions": [_StorageSetting],
+        "typing_imports": ["Any"],
+    },
+    "TEMPLATES": {
+        "docs": dedent(
+            """
+            A list containing the settings for all template engines to be used with
+            Django. Each item of the list is a dictionary containing the options for an
+            individual engine.
+
+            Here's a setup that tells the Django template engine to load templates from the
+            ``templates`` subdirectory inside each installed application::
+
+                TEMPLATES = [
+                    {
+                        "BACKEND": "django.template.backends.django.DjangoTemplates",
+                        "APP_DIRS": True,
+                    },
+                ]
+            """
+        ),
+        "type": "list[_TemplateSetting]",
+        "extra_definitions": [_TemplateSetting],
+        "extra_imports": [ImportItem("os", "PathLike")],
+        "typing_imports": ["Any"],
+    },
+    "TEST_RUNNER": {
+        "docs": dedent(
+            """
+            Default: ``'django.test.runner.DiscoverRunner'``
+
+            The name of the class to use for starting the test suite. See
+            :ref:`other-testing-frameworks`.
+            """
+        ),
+        "type": "str",
+    },
+    "TEST_NON_SERIALIZED_APPS": {
+        "docs": dedent(
+            """
+            Default: ``[]`` (Empty list)
+
+            In order to restore the database state between tests for
+            ``TransactionTestCase``'s and database backends without transactions, Django
+            will :ref:`serialize the contents of all apps <test-case-serialized-rollback>`
+            when it starts the test run so it can then reload from that copy before running
+            tests that need it.
+
+            This slows down the startup time of the test runner; if you have apps that
+            you know don't need this feature, you can add their full names in here (e.g.
+            ``'django.contrib.contenttypes'``) to exclude them from this serialization
+            process.
+            """
+        ),
+        "type": "list[str]",
+    },
+    "THOUSAND_SEPARATOR": {
+        "docs": dedent(
+            """
+            Default: ``','`` (Comma)
+
+            Default thousand separator used when formatting numbers. This setting is
+            used only when :setting:`USE_THOUSAND_SEPARATOR` is ``True`` and
+            :setting:`NUMBER_GROUPING` is greater than ``0``.
+
+            Note that the locale-dictated format has higher precedence and will be applied
+            instead.
+
+            See also :setting:`NUMBER_GROUPING`, :setting:`DECIMAL_SEPARATOR` and
+            :setting:`USE_THOUSAND_SEPARATOR`.
+            """
+        ),
+        "type": "str",
+    },
+    "TIME_FORMAT": {
+        "docs": dedent(
+            """
+            Default: ``'P'`` (e.g. ``4 p.m.``)
+
+            The default formatting to use for displaying time fields in any part of the
+            system. Note that the locale-dictated format has higher precedence and will be
+            applied instead. See :tfilter:`allowed date format strings <date>`.
+
+            See also :setting:`DATE_FORMAT` and :setting:`DATETIME_FORMAT`.
+            """
+        ),
+        "type": "str",
+    },
+    "TIME_INPUT_FORMATS": {
+        "docs": dedent(
+            """
+            Default::
+
+                [
+                    "%H:%M:%S",  # '14:30:59'
+                    "%H:%M:%S.%f",  # '14:30:59.000200'
+                    "%H:%M",  # '14:30'
+                ]
+
+            A list of formats that will be accepted when inputting data on a time field.
+            Formats will be tried in order, using the first valid one. Note that these
+            format strings use Python's :ref:`datetime module syntax
+            <strftime-strptime-behavior>`, not the format strings from the :tfilter:`date`
+            template filter.
+
+            The locale-dictated format has higher precedence and will be applied instead.
+
+            See also :setting:`DATE_INPUT_FORMATS` and :setting:`DATETIME_INPUT_FORMATS`.
+            """
+        ),
+        "type": "list[str]",
+    },
+    "TIME_ZONE": {
+        "docs": dedent(
+            """
+            Default: ``'America/Chicago'``
+
+            A string representing the time zone for this installation. See the `list of
+            time zones`_.
+
+            .. note::
+                Since Django was first released with the :setting:`TIME_ZONE` set to
+                ``'America/Chicago'``, the global setting (used if nothing is defined in
+                your project's ``settings.py``) remains ``'America/Chicago'`` for backwards
+                compatibility. New project templates default to ``'UTC'``.
+
+            Note that this isn't necessarily the time zone of the server. For example, one
+            server may serve multiple Django-powered sites, each with a separate time zone
+            setting.
+
+            When :setting:`USE_TZ` is ``False``, this is the time zone in which Django
+            will store all datetimes. When :setting:`USE_TZ` is ``True``, this is the
+            default time zone that Django will use to display datetimes in templates and
+            to interpret datetimes entered in forms.
+
+            On Unix environments (where :func:`time.tzset` is implemented), Django sets the
+            ``os.environ['TZ']`` variable to the time zone you specify in the
+            :setting:`TIME_ZONE` setting. Thus, all your views and models will
+            automatically operate in this time zone. However, Django won't set the ``TZ``
+            environment variable if you're using the manual configuration option as
+            described in :ref:`manually configuring settings
+            <settings-without-django-settings-module>`. If Django doesn't set the ``TZ``
+            environment variable, it's up to you to ensure your processes are running in
+            the correct environment.
+
+            .. note::
+                Django cannot reliably use alternate time zones in a Windows environment.
+                If you're running Django on Windows, :setting:`TIME_ZONE` must be set to
+                match the system time zone.
+
+            .. _list of time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+            """
+        ),
+        "type": "str",
+    },
+    "USE_I18N": {
+        "docs": dedent(
+            """
+            Default: ``True``
+
+            A boolean that specifies whether Django's translation system should be enabled.
+            This provides a way to turn it off, for performance. If this is set to
+            ``False``, Django will make some optimizations so as not to load the
+            translation machinery.
+
+            See also :setting:`LANGUAGE_CODE` and :setting:`USE_TZ`.
+
+            .. note::
+
+                The default :file:`settings.py` file created by :djadmin:`django-admin
+                startproject <startproject>` includes ``USE_I18N = True`` for convenience.
+            """
+        ),
+        "type": "bool",
+    },
+    "USE_THOUSAND_SEPARATOR": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            A boolean that specifies whether to display numbers using a thousand separator.
+            When set to ``True``, Django will format numbers using the
+            :setting:`NUMBER_GROUPING` and :setting:`THOUSAND_SEPARATOR` settings. The
+            latter two settings may also be dictated by the locale, which takes precedence.
+
+            See also :setting:`DECIMAL_SEPARATOR`, :setting:`NUMBER_GROUPING` and
+            :setting:`THOUSAND_SEPARATOR`.
+            """
+        ),
+        "type": "bool",
+    },
+    "USE_TZ": {
+        "docs": dedent(
+            """
+            Default: ``True``
+
+            A boolean that specifies if datetimes will be timezone-aware by default or not.
+            If this is set to ``True``, Django will use timezone-aware datetimes internally.
+
+            When ``USE_TZ`` is False, Django will use naive datetimes in local time, except
+            when parsing ISO 8601 formatted strings, where timezone information will always
+            be retained if present.
+
+            See also :setting:`TIME_ZONE` and :setting:`USE_I18N`.
+
+            .. versionchanged:: 5.0
+
+                In older versions, the default value is ``False``.
+            """
+        ),
+        "type": "bool",
+    },
+    "USE_X_FORWARDED_HOST": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            A boolean that specifies whether to use the ``X-Forwarded-Host`` header in
+            preference to the ``Host`` header. This should only be enabled if a proxy
+            which sets this header is in use.
+
+            This setting takes priority over :setting:`USE_X_FORWARDED_PORT`. Per
+            :rfc:`7239#section-5.3`, the ``X-Forwarded-Host`` header can include the port
+            number, in which case you shouldn't use :setting:`USE_X_FORWARDED_PORT`.
+            """
+        ),
+        "type": "bool",
+    },
+    "USE_X_FORWARDED_PORT": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            A boolean that specifies whether to use the ``X-Forwarded-Port`` header in
+            preference to the ``SERVER_PORT`` ``META`` variable. This should only be
+            enabled if a proxy which sets this header is in use.
+
+            :setting:`USE_X_FORWARDED_HOST` takes priority over this setting.
+            """
+        ),
+        "type": "bool",
+    },
+    "WSGI_APPLICATION": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            The full Python path of the WSGI application object that Django's built-in
+            servers (e.g. :djadmin:`runserver`) will use. The :djadmin:`django-admin
+            startproject <startproject>` management command will create a standard
+            ``wsgi.py`` file with an ``application`` callable in it, and point this setting
+            to that ``application``.
+
+            If not set, the return value of ``django.core.wsgi.get_wsgi_application()``
+            will be used. In this case, the behavior of :djadmin:`runserver` will be
+            identical to previous Django versions.
+            """
+        ),
+        "type": "str | None",
+    },
+    "YEAR_MONTH_FORMAT": {
+        "docs": dedent(
+            """
+            Default: ``'F Y'``
+
+            The default formatting to use for date fields on Django admin change-list
+            pages -- and, possibly, by other parts of the system -- in cases when only the
+            year and month are displayed.
+
+            For example, when a Django admin change-list page is being filtered by a date
+            drilldown, the header for a given month displays the month and the year.
+            Different locales have different formats. For example, U.S. English would say
+            "January 2006," whereas another locale might say "2006/January."
+
+            Note that the corresponding locale-dictated format has higher precedence and
+            will be applied instead.
+
+            See :tfilter:`allowed date format strings <date>`. See also
+            :setting:`DATE_FORMAT`, :setting:`DATETIME_FORMAT`, :setting:`TIME_FORMAT`
+            and :setting:`MONTH_DAY_FORMAT`.
+            """
+        ),
+        "type": "str",
+    },
+    "X_FRAME_OPTIONS": {
+        "docs": dedent(
+            """
+            Default: ``'DENY'``
+
+            The default value for the X-Frame-Options header used by
+            :class:`~django.middleware.clickjacking.XFrameOptionsMiddleware`. See the
+            :doc:`clickjacking protection </ref/clickjacking/>` documentation.
+            """
+        ),
+        "type": 'Literal["DENY", "SAMEORIGIN"]',  # TODO more types?
+        "typing_imports": ["Literal"],
+    },
+    # AUTH:
+    "AUTHENTICATION_BACKENDS": {
+        "docs": dedent(
+            """
+            Default: ``['django.contrib.auth.backends.ModelBackend']``
+
+            A list of authentication backend classes (as strings) to use when attempting to
+            authenticate a user. See the :ref:`authentication backends documentation
+            <authentication-backends>` for details.
+            """
+        ),
+        "type": "list[str]",
+    },
+    "AUTH_USER_MODEL": {  # This should be special cased in the codemod
+        "docs": dedent(
+            """
+            Default: ``'auth.User'``
+
+            The model to use to represent a User. See :ref:`auth-custom-user`.
+
+            .. warning::
+                You cannot change the AUTH_USER_MODEL setting during the lifetime of
+                a project (i.e. once you have made and migrated models that depend on it)
+                without serious effort. It is intended to be set at the project start,
+                and the model it refers to must be available in the first migration of
+                the app that it lives in.
+                See :ref:`auth-custom-user` for more details.
+            """
+        ),
+        "type": "str",
+    },
+    "LOGIN_REDIRECT_URL": {
+        "docs": dedent(
+            """
+            Default: ``'/accounts/profile/'``
+
+            The URL or :ref:`named URL pattern <naming-url-patterns>` where requests are
+            redirected after login when the :class:`~django.contrib.auth.views.LoginView`
+            doesn't get a ``next`` GET parameter.
+            """
+        ),
+        "type": "str",  # TODO more types? reverse_lazy?
+    },
+    "LOGIN_URL": {
+        "docs": dedent(
+            """
+            Default: ``'/accounts/login/'``
+
+            The URL or :ref:`named URL pattern <naming-url-patterns>` where requests are
+            redirected for login when using the
+            :func:`~django.contrib.auth.decorators.login_required` decorator,
+            :class:`~django.contrib.auth.mixins.LoginRequiredMixin`, or
+            :class:`~django.contrib.auth.mixins.AccessMixin`.
+            """
+        ),
+        "type": "str",  # TODO more types? reverse_lazy?
+    },
+    "LOGOUT_REDIRECT_URL": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            The URL or :ref:`named URL pattern <naming-url-patterns>` where requests are
+            redirected after logout if :class:`~django.contrib.auth.views.LogoutView`
+            doesn't have a ``next_page`` attribute.
+
+            If ``None``, no redirect will be performed and the logout view will be
+            rendered.
+            """
+        ),
+        "type": "str | None",  # TODO more types? reverse_lazy?
+    },
+    "PASSWORD_RESET_TIMEOUT": {
+        "docs": dedent(
+            """
+            Default: ``259200`` (3 days, in seconds)
+
+            The number of seconds a password reset link is valid for.
+
+            Used by the :class:`~django.contrib.auth.views.PasswordResetConfirmView`.
+
+            .. note::
+
+            Reducing the value of this timeout doesn't make any difference to the
+            ability of an attacker to brute-force a password reset token. Tokens are
+            designed to be safe from brute-forcing without any timeout.
+
+            This timeout exists to protect against some unlikely attack scenarios, such
+            as someone gaining access to email archives that may contain old, unused
+            password reset tokens.
+            """
+        ),
+        "type": "int",
+    },
+    "PASSWORD_HASHERS": {
+        "docs": dedent(
+            """
+            See :ref:`auth_password_storage`.
+
+            Default::
+
+                [
+                    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+                    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+                    "django.contrib.auth.hashers.Argon2PasswordHasher",
+                    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+                    "django.contrib.auth.hashers.ScryptPasswordHasher",
+                ]
+            """
+        ),
+        "type": "list[str]",
+    },
+    "AUTH_PASSWORD_VALIDATORS": {
+        "docs": dedent(
+            """
+            Default: ``[]`` (Empty list)
+
+            The list of validators that are used to check the strength of user's passwords.
+            See :ref:`password-validation` for more details. By default, no validation is
+            performed and all passwords are accepted.
+            """
+        ),
+        "type": "list[str]",
+    },
+    # MESSAGES:
+    "MESSAGE_LEVEL": {
+        "docs": dedent(
+            """
+            Default: ``messages.INFO``
+
+            Sets the minimum message level that will be recorded by the messages
+            framework. See :ref:`message levels <message-level>` for more details.
+
+            .. admonition:: Avoiding circular imports
+
+            If you override ``MESSAGE_LEVEL`` in your settings file and rely on any of
+            the built-in constants, you must import the constants module directly to
+            avoid the potential for circular imports, e.g.::
+
+                from django.contrib.messages import constants as message_constants
+
+                MESSAGE_LEVEL = message_constants.DEBUG
+
+            If desired, you may specify the numeric values for the constants directly
+            according to the values in the above :ref:`constants table
+            <message-level-constants>`.
+            """
+        ),
+        "type": "int",
+    },
+    "MESSAGE_STORAGE": {
+        "docs": dedent(
+            """
+            Default: ``'django.contrib.messages.storage.fallback.FallbackStorage'``
+
+            Controls where Django stores message data. Valid values are:
+
+            * ``'django.contrib.messages.storage.fallback.FallbackStorage'``
+            * ``'django.contrib.messages.storage.session.SessionStorage'``
+            * ``'django.contrib.messages.storage.cookie.CookieStorage'``
+
+            See :ref:`message storage backends <message-storage-backends>` for more details.
+
+            The backends that use cookies --
+            :class:`~django.contrib.messages.storage.cookie.CookieStorage` and
+            :class:`~django.contrib.messages.storage.fallback.FallbackStorage` --
+            use the value of :setting:`SESSION_COOKIE_DOMAIN`, :setting:`SESSION_COOKIE_SECURE`
+            and :setting:`SESSION_COOKIE_HTTPONLY` when setting their cookies.
+            """
+        ),
+        "type": "str",
+    },
+    "MESSAGE_TAGS": {
+        "docs": dedent(
+            """
+            Default::
+
+                {
+                    messages.DEBUG: "debug",
+                    messages.INFO: "info",
+                    messages.SUCCESS: "success",
+                    messages.WARNING: "warning",
+                    messages.ERROR: "error",
+                }
+
+            This sets the mapping of message level to message tag, which is typically
+            rendered as a CSS class in HTML. If you specify a value, it will extend
+            the default. This means you only have to specify those values which you need
+            to override. See :ref:`message-displaying` above for more details.
+
+            .. admonition:: Avoiding circular imports
+
+            If you override ``MESSAGE_TAGS`` in your settings file and rely on any of
+            the built-in constants, you must import the ``constants`` module directly to
+            avoid the potential for circular imports, e.g.::
+
+                from django.contrib.messages import constants as message_constants
+
+                MESSAGE_TAGS = {message_constants.INFO: ""}
+
+            If desired, you may specify the numeric values for the constants directly
+            according to the values in the above :ref:`constants table
+            <message-level-constants>`.
+            """
+        ),
+        "type": "dict[int, str]",
+    },
+    # SESSIONS:
+    "SESSION_CACHE_ALIAS": {
+        "docs": dedent(
+            """
+            Default: ``'default'``
+
+            If you're using :ref:`cache-based session storage <cached-sessions-backend>`,
+            this selects the cache to use.
+            """
+        ),
+        "type": "str",
+    },
+    "SESSION_COOKIE_AGE": {
+        "docs": dedent(
+            """
+            Default: ``1209600`` (2 weeks, in seconds)
+
+            The age of session cookies, in seconds.
+            """
+        ),
+        "type": "int",
+    },
+    "SESSION_COOKIE_DOMAIN": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            The domain to use for session cookies. Set this to a string such as
+            ``"example.com"`` for cross-domain cookies, or use ``None`` for a standard
+            domain cookie.
+
+            To use cross-domain cookies with :setting:`CSRF_USE_SESSIONS`, you must include
+            a leading dot (e.g. ``".example.com"``) to accommodate the CSRF middleware's
+            referer checking.
+
+            Be cautious when updating this setting on a production site. If you update
+            this setting to enable cross-domain cookies on a site that previously used
+            standard domain cookies, existing user cookies will be set to the old
+            domain. This may result in them being unable to log in as long as these cookies
+            persist.
+
+            This setting also affects cookies set by :mod:`django.contrib.messages`.
+            """
+        ),
+        "type": "str | None",
+    },
+    "SESSION_COOKIE_HTTPONLY": {
+        "docs": dedent(
+            """
+            Default: ``True``
+
+            Whether to use ``HttpOnly`` flag on the session cookie. If this is set to
+            ``True``, client-side JavaScript will not be able to access the session
+            cookie.
+
+            HttpOnly_ is a flag included in a Set-Cookie HTTP response header. It's part of
+            the :rfc:`6265#section-4.1.2.6` standard for cookies and can be a useful way to
+            mitigate the risk of a client-side script accessing the protected cookie data.
+
+            This makes it less trivial for an attacker to escalate a cross-site scripting
+            vulnerability into full hijacking of a user's session. There aren't many good
+            reasons for turning this off. Your code shouldn't read session cookies from
+            JavaScript.
+
+            .. _HttpOnly: https://owasp.org/www-community/HttpOnly
+            """
+        ),
+        "type": "bool",
+    },
+    "SESSION_COOKIE_NAME": {
+        "docs": dedent(
+            """
+            Default: ``'sessionid'``
+
+            The name of the cookie to use for sessions. This can be whatever you want
+            (as long as it's different from the other cookie names in your application).
+            """
+        ),
+        "type": "str",
+    },
+    "SESSION_COOKIE_PATH": {
+        "docs": dedent(
+            """
+            Default: ``'/'``
+
+            The path set on the session cookie. This should either match the URL path of your
+            Django installation or be parent of that path.
+
+            This is useful if you have multiple Django instances running under the same
+            hostname. They can use different cookie paths, and each instance will only see
+            its own session cookie.
+            """
+        ),
+        "type": "str",
+    },
+    "SESSION_COOKIE_SAMESITE": {
+        "docs": dedent(
+            """
+            Default: ``'Lax'``
+
+            The value of the `SameSite`_ flag on the session cookie. This flag prevents the
+            cookie from being sent in cross-site requests thus preventing CSRF attacks and
+            making some methods of stealing session cookie impossible.
+
+            Possible values for the setting are:
+
+            * ``'Strict'``: prevents the cookie from being sent by the browser to the
+            target site in all cross-site browsing context, even when following a regular
+            link.
+
+            For example, for a GitHub-like website this would mean that if a logged-in
+            user follows a link to a private GitHub project posted on a corporate
+            discussion forum or email, GitHub will not receive the session cookie and the
+            user won't be able to access the project. A bank website, however, most
+            likely doesn't want to allow any transactional pages to be linked from
+            external sites so the ``'Strict'`` flag would be appropriate.
+
+            * ``'Lax'`` (default): provides a balance between security and usability for
+            websites that want to maintain user's logged-in session after the user
+            arrives from an external link.
+
+            In the GitHub scenario, the session cookie would be allowed when following a
+            regular link from an external website and be blocked in CSRF-prone request
+            methods (e.g. ``POST``).
+
+            * ``'None'`` (string): the session cookie will be sent with all same-site and
+            cross-site requests.
+
+            * ``False``: disables the flag.
+
+            .. note::
+
+                Modern browsers provide a more secure default policy for the ``SameSite``
+                flag and will assume ``Lax`` for cookies without an explicit value set.
+
+            .. _SameSite: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
+            """
+        ),
+        "type": 'Literal["Strict", "Lax", "None", False]',
+        "typing_imports": ["Literal"],
+    },
+    "SESSION_COOKIE_SECURE": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            Whether to use a secure cookie for the session cookie. If this is set to
+            ``True``, the cookie will be marked as "secure", which means browsers may
+            ensure that the cookie is only sent under an HTTPS connection.
+
+            Leaving this setting off isn't a good idea because an attacker could capture an
+            unencrypted session cookie with a packet sniffer and use the cookie to hijack
+            the user's session.
+            """
+        ),
+        "type": "bool",
+    },
+    "SESSION_ENGINE": {
+        "docs": dedent(
+            """
+            Default: ``'django.contrib.sessions.backends.db'``
+
+            Controls where Django stores session data. Included engines are:
+
+            * ``'django.contrib.sessions.backends.db'``
+            * ``'django.contrib.sessions.backends.file'``
+            * ``'django.contrib.sessions.backends.cache'``
+            * ``'django.contrib.sessions.backends.cached_db'``
+            * ``'django.contrib.sessions.backends.signed_cookies'``
+
+            See :ref:`configuring-sessions` for more details.
+            """
+        ),
+        "type": "str",
+    },
+    "SESSION_EXPIRE_AT_BROWSER_CLOSE": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            Whether to expire the session when the user closes their browser. See
+            :ref:`browser-length-vs-persistent-sessions`.
+            """
+        ),
+        "type": "bool",
+    },
+    "SESSION_FILE_PATH": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            If you're using file-based session storage, this sets the directory in
+            which Django will store session data. When the default value (``None``) is
+            used, Django will use the standard temporary directory for the system.
+            """
+        ),
+        "type": "str",  # TODO PathLike?
+    },
+    "SESSION_SAVE_EVERY_REQUEST": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            Whether to save the session data on every request. If this is ``False``
+            (default), then the session data will only be saved if it has been modified --
+            that is, if any of its dictionary values have been assigned or deleted. Empty
+            sessions won't be created, even if this setting is active.
+            """
+        ),
+        "type": "bool",
+    },
+    "SESSION_SERIALIZER": {
+        "docs": dedent(
+            """
+            Default: ``'django.contrib.sessions.serializers.JSONSerializer'``
+
+            Full import path of a serializer class to use for serializing session data.
+            Included serializer is:
+
+            * ``'django.contrib.sessions.serializers.JSONSerializer'``
+
+            See :ref:`session_serialization` for details.
+            """
+        ),
+        "type": "str",
+    },
+    # SITES:
+    "SITE_ID": {
+        "docs": dedent(
+            """
+            Default: Not defined
+
+            The ID, as an integer, of the current site in the ``django_site`` database
+            table. This is used so that application data can hook into specific sites
+            and a single database can manage content for multiple sites.
+            """
+        ),
+        "type": "int",
+    },
+    # STATIC FILES:
+    "STATIC_ROOT": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            The absolute path to the directory where :djadmin:`collectstatic` will collect
+            static files for deployment.
+
+            Example: ``"/var/www/example.com/static/"``
+
+            If the :doc:`staticfiles</ref/contrib/staticfiles>` contrib app is enabled
+            (as in the default project template), the :djadmin:`collectstatic` management
+            command will collect static files into this directory. See the how-to on
+            :doc:`managing static files</howto/static-files/index>` for more details about
+            usage.
+
+            .. warning::
+
+                This should be an initially empty destination directory for collecting
+                your static files from their permanent locations into one directory for
+                ease of deployment; it is **not** a place to store your static files
+                permanently. You should do that in directories that will be found by
+                :doc:`staticfiles</ref/contrib/staticfiles>`'s
+                :setting:`finders<STATICFILES_FINDERS>`, which by default, are
+                ``'static/'`` app sub-directories and any directories you include in
+                :setting:`STATICFILES_DIRS`).
+            """
+        ),
+        "type": "PathLike[str] | str",  # TODO type
+        "extra_imports": [ImportItem("os", "PathLike")],
+    },
+    "STATIC_URL": {
+        "docs": dedent(
+            """
+            Default: ``None``
+
+            URL to use when referring to static files located in :setting:`STATIC_ROOT`.
+
+            Example: ``"static/"`` or ``"https://static.example.com/"``
+
+            If not ``None``, this will be used as the base path for
+            :ref:`asset definitions<form-asset-paths>` (the ``Media`` class) and the
+            :doc:`staticfiles app</ref/contrib/staticfiles>`.
+
+            It must end in a slash if set to a non-empty value.
+
+            You may need to :ref:`configure these files to be served in development
+            <serving-static-files-in-development>` and will definitely need to do so
+            :doc:`in production </howto/static-files/deployment>`.
+
+            .. note::
+
+                If :setting:`STATIC_URL` is a relative path, then it will be prefixed by
+                the server-provided value of ``SCRIPT_NAME`` (or ``/`` if not set). This
+                makes it easier to serve a Django application in a subpath without adding
+                an extra configuration to the settings.
+            """
+        ),
+        "type": "str | None",
+    },
+    "STATICFILES_DIRS": {
+        "docs": dedent(
+            """
+            Default: ``[]`` (Empty list)
+
+            This setting defines the additional locations the staticfiles app will traverse
+            if the ``FileSystemFinder`` finder is enabled, e.g. if you use the
+            :djadmin:`collectstatic` or :djadmin:`findstatic` management command or use the
+            static file serving view.
+
+            This should be set to a list of strings that contain full paths to
+            your additional files directory(ies) e.g.::
+
+                STATICFILES_DIRS = [
+                    "/home/special.polls.com/polls/static",
+                    "/home/polls.com/polls/static",
+                    "/opt/webfiles/common",
+                ]
+
+            Note that these paths should use Unix-style forward slashes, even on Windows
+            (e.g. ``"C:/Users/user/mysite/extra_static_content"``).
+
+            Prefixes (optional)
+            ~~~~~~~~~~~~~~~~~~~
+
+            In case you want to refer to files in one of the locations with an additional
+            namespace, you can **optionally** provide a prefix as ``(prefix, path)``
+            tuples, e.g.::
+
+                STATICFILES_DIRS = [
+                    # ...
+                    ("downloads", "/opt/webfiles/stats"),
+                ]
+
+            For example, assuming you have :setting:`STATIC_URL` set to ``'static/'``, the
+            :djadmin:`collectstatic` management command would collect the "stats" files
+            in a ``'downloads'`` subdirectory of :setting:`STATIC_ROOT`.
+
+            This would allow you to refer to the local file
+            ``'/opt/webfiles/stats/polls_20101022.tar.gz'`` with
+            ``'/static/downloads/polls_20101022.tar.gz'`` in your templates, e.g.:
+
+            .. code-block:: html+django
+
+                <a href="{% static 'downloads/polls_20101022.tar.gz' %}">
+            """
+        ),
+        "type": "list[PathLike[str] | str | tuple[str, PathLike[str] | str]]",  # TODO type
+        "extra_imports": [ImportItem("os", "PathLike")],
+    },
+    "STATICFILES_FINDERS": {
+        "docs": dedent(
+            """
+            Default::
+
+                [
+                    "django.contrib.staticfiles.finders.FileSystemFinder",
+                    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+                ]
+
+            The list of finder backends that know how to find static files in
+            various locations.
+
+            The default will find files stored in the :setting:`STATICFILES_DIRS` setting
+            (using ``django.contrib.staticfiles.finders.FileSystemFinder``) and in a
+            ``static`` subdirectory of each app (using
+            ``django.contrib.staticfiles.finders.AppDirectoriesFinder``). If multiple
+            files with the same name are present, the first file that is found will be
+            used.
+
+            One finder is disabled by default:
+            ``django.contrib.staticfiles.finders.DefaultStorageFinder``. If added to
+            your :setting:`STATICFILES_FINDERS` setting, it will look for static files in
+            the default file storage as defined by the ``default`` key in the
+            :setting:`STORAGES` setting.
+
+            .. note::
+
+                When using the ``AppDirectoriesFinder`` finder, make sure your apps
+                can be found by staticfiles by adding the app to the
+                :setting:`INSTALLED_APPS` setting of your site.
+
+            Static file finders are currently considered a private interface, and this
+            interface is thus undocumented.
+            """
+        ),
+        "type": "list[str]",
     },
 }
