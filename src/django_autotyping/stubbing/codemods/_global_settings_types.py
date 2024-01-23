@@ -16,6 +16,9 @@ class SettingTypingConfiguration(TypedDict, total=False):
     type: Required[str]
     """The stringified type annotation to be used."""
 
+    no_default: bool
+    """Whether this setting does not have a default value."""
+
     typing_imports: list[str]
     """A list of typing objects to be imported."""
 
@@ -24,6 +27,18 @@ class SettingTypingConfiguration(TypedDict, total=False):
 
     extra_definitions: list[type[Any]]
     """A list of extra objects to be included in the file."""
+
+    added_in: tuple[int, int, int]
+    """The Django version this setting was added."""
+
+    removed_in: tuple[int, int, int]
+    """The Django version this setting was removed."""
+
+    deprecated_since: tuple[int, int, int]
+    """The Django version this setting was deprecated."""
+
+    deprecated_message: str
+    """The deprecation message to be used."""
 
 
 # Type definitions specific to settings. They will be included in the type stubs
@@ -399,7 +414,9 @@ class _DatabaseSetting(TypedDict, total=False):
     """
 
     CONN_HEALTH_CHECKS: bool
-    """Default: ``False``
+    """.. versionadded:: 4.1
+
+    Default: ``False``
 
     If set to ``True``, existing :ref:`persistent database connections
     <persistent-database-connections>` will be health checked before they are
@@ -818,6 +835,27 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
         ),
         "type": "bool",
     },
+    "CSRF_COOKIE_MASKED": {
+        "docs": dedent(
+            """
+            .. versionadded:: 4.1
+
+            Default: ``False``
+
+            Whether to mask the CSRF cookie. See
+            :ref:`release notes <csrf-cookie-masked-usage>` for usage details.
+
+            .. deprecated:: 4.1
+
+                This transitional setting is deprecated and will be removed in Django 5.0.
+            """
+        ),
+        "type": "bool",
+        "added_in": (4, 1, 0),
+        "deprecated_since": (4, 1, 0),
+        "deprecated_message": "This transitional setting is deprecated and will be removed in Django 5.0.",
+        "removed_in": (5, 0, 0),
+    },
     "CSRF_COOKIE_NAME": {
         "docs": dedent(
             """
@@ -1064,6 +1102,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "int",
+        "added_in": (3, 2, 18),
     },
     "DATABASE_ROUTERS": {
         "docs": dedent(
@@ -1324,6 +1363,30 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
         ),
         "type": "str",
     },
+    "DEFAULT_FILE_STORAGE": {
+        "docs": dedent(
+            """
+            Default: ``'``:class:`django.core.files.storage.FileSystemStorage` ``'``
+
+            Default file storage class to be used for any file-related operations that don't
+            specify a particular storage system. See :doc:`/topics/files`.
+
+            .. deprecated:: 4.2
+
+                This setting is deprecated. Starting with Django 4.2, default file storage
+                engine can be configured with the :setting:`STORAGES` setting under the
+                ``default`` key.
+            """
+        ),
+        "type": "str",
+        "deprecated_since": (4, 2, 0),
+        "deprecated_message": (
+            "This setting is deprecated. Starting with Django 4.2, default file storage "
+            "engine can be configured with the :setting:`STORAGES` setting under the "
+            "``default`` key."
+        ),
+        "removed_in": (5, 1, 0),
+    },
     "DEFAULT_FROM_EMAIL": {
         "docs": dedent(
             """
@@ -1395,6 +1458,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "Any",  # TODO what type?
+        "no_default": True,
     },
     "EMAIL_HOST": {
         "docs": dedent(
@@ -1719,6 +1783,9 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "bool",
+        "added_in": (5, 0, 0),
+        "deprecated_since": (5, 0, 0),
+        "deprecated_message": "",
     },
     "FORMAT_MODULE_PATH": {
         "docs": dedent(
@@ -2296,6 +2363,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "str",
+        "no_default": True,
     },
     "SECRET_KEY": {
         "docs": dedent(
@@ -2379,6 +2447,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "list[str]",
+        "added_in": (4, 1, 0),
     },
     "SECURE_CONTENT_TYPE_NOSNIFF": {
         "docs": dedent(
@@ -2404,6 +2473,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "str | None",
+        "added_in": (4, 0, 0),
     },
     "SECURE_HSTS_INCLUDE_SUBDOMAINS": {
         "docs": dedent(
@@ -2595,6 +2665,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "dict[str, str]",
+        "no_default": True,
     },
     "SERVER_EMAIL": {
         "docs": dedent(
@@ -2728,6 +2799,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
         "type": "dict[str, dict[str, _StorageSetting]]",
         "extra_definitions": [_StorageSetting],
         "typing_imports": ["Any"],
+        "added_in": (4, 2, 0),
     },
     "TEMPLATES": {
         "docs": dedent(
@@ -2881,6 +2953,28 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
         ),
         "type": "str",
     },
+    "USE_DEPRECATED_PYTZ": {
+        "docs": dedent(
+            """
+            Default: ``False``
+
+            A boolean that specifies whether to use ``pytz``, rather than :mod:`zoneinfo`,
+            as the default time zone implementation.
+
+            .. deprecated:: 4.0
+
+                This transitional setting is deprecated. Support for using ``pytz`` will be
+                removed in Django 5.0.
+            """
+        ),
+        "type": "bool",
+        "added_in": (4, 0, 0),
+        "deprecated_since": (4, 0, 0),
+        "deprecated_message": (
+            "This transitional setting is deprecated. Support for using ``pytz`` will be removed in Django 5.0."
+        ),
+        "removed_in": (5, 0, 0),
+    },
     "USE_I18N": {
         "docs": dedent(
             """
@@ -2900,6 +2994,33 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "bool",
+    },
+    "USE_L10N": {
+        "docs": dedent(
+            """
+            Default: ``True``
+
+            A boolean that specifies if localized formatting of data will be enabled by
+            default or not. If this is set to ``True``, e.g. Django will display numbers and
+            dates using the format of the current locale.
+
+            See also :setting:`LANGUAGE_CODE`, :setting:`USE_I18N` and :setting:`USE_TZ`.
+
+            .. deprecated:: 4.0
+
+                This setting is deprecated. Starting with Django 5.0, localized formatting
+                of data will always be enabled. For example Django will display numbers and
+                dates using the format of the current locale.
+            """
+        ),
+        "type": "bool",
+        "deprecated_since": (4, 0, 0),
+        "deprecated_message": (
+            "This setting is deprecated. Starting with Django 5.0, localized formatting "
+            "of data will always be enabled. For example Django will display numbers and "
+            "dates using the format of the current locale."
+        ),
+        "removed_in": (5, 0, 0),
     },
     "USE_THOUSAND_SEPARATOR": {
         "docs": dedent(
@@ -3468,6 +3589,7 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
             """
         ),
         "type": "int",
+        "no_default": True,
     },
     # STATIC FILES:
     "STATIC_ROOT": {
@@ -3579,6 +3701,35 @@ GLOBAL_SETTINGS: dict[str, SettingTypingConfiguration] = {
         ),
         "type": "list[PathLike[str] | str | tuple[str, PathLike[str] | str]]",  # TODO type
         "extra_imports": [ImportItem("os", "PathLike")],
+    },
+    "STATICFILES_STORAGE": {
+        "docs": dedent(
+            """
+            Default: ``'django.contrib.staticfiles.storage.StaticFilesStorage'``
+
+            The file storage engine to use when collecting static files with the
+            :djadmin:`collectstatic` management command.
+
+            A ready-to-use instance of the storage backend defined in this setting
+            can be found under ``staticfiles`` key in ``django.core.files.storage.storages``.
+
+            For an example, see :ref:`staticfiles-from-cdn`.
+
+            .. deprecated:: 4.2
+
+                This setting is deprecated. Starting with Django 4.2, static files storage
+                engine can be configured with the :setting:`STORAGES` setting under the
+                ``staticfiles`` key.
+            """
+        ),
+        "type": "str",
+        "deprecated_since": (4, 2, 0),
+        "deprecated_message": (
+            "This setting is deprecated. Starting with Django 4.2, static files storage "
+            "engine can be configured with the :setting:`STORAGES` setting under the "
+            "``staticfiles`` key."
+        ),
+        "removed_in": (5, 1, 0),
     },
     "STATICFILES_FINDERS": {
         "docs": dedent(

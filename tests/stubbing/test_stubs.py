@@ -87,6 +87,7 @@ def test_pyright(
                 "stubPath": str(local_stubs.absolute()),
                 "extraPaths": [str(STUBSTESTPROJ.parent)],
                 "reportUnnecessaryTypeIgnoreComment": True,
+                "reportDeprecated": True,
             }
         )
     )

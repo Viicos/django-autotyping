@@ -66,6 +66,7 @@ select = [
 ignore = [
     "PLR0912",
     "PLR0913",
+    "PLW2901",
 ]
 src = ["src"]
 exclude = ["tests/codemodtestproj", "tests/stubstestproj", "tests/stubbing/testfiles"]
