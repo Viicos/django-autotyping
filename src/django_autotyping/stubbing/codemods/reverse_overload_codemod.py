@@ -10,9 +10,9 @@ from libcst.codemod import CodemodContext
 
 from django_autotyping.typing import FlattenFunctionDef
 
+from ._utils import TypedDictAttribute, build_typed_dict, get_param
 from .base import InsertAfterImportsVisitor, StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
-from .utils import TypedDictAttribute, build_typed_dict, get_param
 
 if TYPE_CHECKING:
     from ..django_context import PathInfo

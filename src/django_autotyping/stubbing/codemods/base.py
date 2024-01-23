@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from ..django_context import DjangoStubbingContext
 
 
-TYPING_EXTENSIONS_NAMES = ["Unpack", "Required", "NotRequired"]
+TYPING_EXTENSIONS_NAMES = ["Unpack", "Required", "NotRequired", "deprecated"]
 
 ModuleT = TypeVar("ModuleT", bound=cst.Module)
 

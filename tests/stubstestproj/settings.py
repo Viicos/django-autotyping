@@ -72,5 +72,8 @@ DATABASES = {
     }
 }
 
-# For DJAS011
+# For DJAS011/DJAS016
 AUTH_USER_MODEL = "accounts.User"
+
+# For DJAS016
+CUSTOM_SETTING = "custom_setting"

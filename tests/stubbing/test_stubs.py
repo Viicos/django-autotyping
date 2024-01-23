@@ -25,6 +25,7 @@ testfiles_params = pytest.mark.parametrize(
         ("djas001_allow_non_set_type.py", ["DJAS001"], StubsGenerationSettings(ALLOW_NONE_SET_TYPE=True)),
         ("djas010.py", ["DJAS010"], StubsGenerationSettings()),
         ("djas011.py", ["DJAS011"], StubsGenerationSettings()),
+        ("djas016.py", ["DJAS016"], StubsGenerationSettings()),
     ],
 )
 # fmt: on
@@ -86,6 +87,7 @@ def test_pyright(
                 "stubPath": str(local_stubs.absolute()),
                 "extraPaths": [str(STUBSTESTPROJ.parent)],
                 "reportUnnecessaryTypeIgnoreComment": True,
+                "reportDeprecated": True,
             }
         )
     )

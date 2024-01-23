@@ -65,7 +65,7 @@ plugins:
         python:
           paths: [src]
           import:
-            - https://docs.python.org/3/objects.inv
+            - https://docs.python.org/3.13/objects.inv
             - url: https://docs.djangoproject.com/en/dev/_objects
               domains: [std,py]
             - url: https://typing.readthedocs.io/en/latest/objects.inv

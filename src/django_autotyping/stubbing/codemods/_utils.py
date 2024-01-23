@@ -34,8 +34,9 @@ def to_pascal(string) -> str:
     return re.sub("([0-9A-Za-z])_(?=[0-9A-Z])", lambda m: m.group(1), string.title())
 
 
-def _indent(string: str) -> str:
-    return string.replace("\n", "\n    ")
+def _indent(string: str, indent_size: int = 1) -> str:
+    indent_ws = "    " * indent_size
+    return string.replace("\n", f"\n{indent_ws}").replace(f"\n{indent_ws}\n", "\n\n")
 
 
 @dataclass

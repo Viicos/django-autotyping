@@ -7,8 +7,8 @@ from libcst import helpers
 from libcst.codemod import CodemodContext
 from libcst.codemod.visitors import AddImportsVisitor
 
+from ._utils import get_param
 from .base import StubVisitorBasedCodemod
-from .utils import get_param
 
 # Matchers:
 
