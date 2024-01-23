@@ -134,7 +134,7 @@ class _ChacheSetting(TypedDict, total=False):
     """
 
 
-class _DatabaseTestSetting(TypedDict, total=False):
+class _DatabaseTestSetting(TypedDict):
     CHARSET: str
     """Default: ``None``
 
@@ -342,7 +342,7 @@ class _DatabaseTestSetting(TypedDict, total=False):
     """
 
 
-class _DatabaseSetting(TypedDict, total=False):
+class _DatabaseSetting(TypedDict):
     ATOMIC_REQUESTS: bool
     """Default: ``False``
 
