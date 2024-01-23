@@ -43,13 +43,29 @@ TYPE_MAP = {
 class SettingCodemod(StubVisitorBasedCodemod):
     """A codemod that will add typing to the Django settings object.
 
+    Depending on the Django version being used when running the stubs generation,
+    the available settings might differ. The [`@deprecated`][warnings.deprecated]
+    decorator will be used if necessary, thus making your type checker aware of
+    the deprecation notice.
+
     Rule identifier: `DJAS016`.
 
     ```python
     from django.conf import settings
 
     reveal_type(settings.ADMINS)  # Revealed type is "list[tuple[str, str]]"
+    reveal_type(settings.CUSTOM_SETTING)  # Revealed type is "str"
+    reveal_type(settings.USE_DEPRECATED_PYTZ)  # Will be marked as deprecated by the type checker.
     ```
+
+    !!! info "Experimental"
+        Type hints might not reflect the actual type being used at runtime.
+        For Django settings, all the possible types are taken into account (e.g. the
+        `EMAIL_TIMEOUT` setting might be set to `10`, but as the default value is `None`,
+        the reflected type hint will be `int | None`).
+
+        For custom settings, only simple types are inferred. See
+        [this issue](https://github.com/Viicos/django-autotyping/issues/40) for more details.
     """
 
     STUB_FILES = {"conf/__init__.pyi"}
@@ -100,7 +116,6 @@ class SettingCodemod(StubVisitorBasedCodemod):
     @m.leave(CLASS_DEF_MATCHER)
     def mutate_ClassDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.ClassDef:
         body = list(updated_node.body.body)
-        # TODO special case AUTH_MODEL to be a literal, so that it plays well with foreign keys
 
         with warnings.catch_warnings():  # py3.11: `with warnings.catch_warnings(action="ignore")`
             warnings.simplefilter("ignore", category=DeprecationWarning)
