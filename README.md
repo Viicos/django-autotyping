@@ -18,7 +18,7 @@ To understand the *why* and *how*, you can refer to the [context section](https:
   <img src="./docs/assets/demo.svg">
 </p>
 
-> [!WARNING]\
+> [!WARNING]
 > This project is still work in progress. It is meant to work with [`django-stubs`](https://github.com/typeddjango/django-stubs), but some improvements and changes are probably going to be
 > implemented in the stub definitions, and could potentially require some changes to the generated stubs.
 
