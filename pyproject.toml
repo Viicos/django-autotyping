@@ -8,7 +8,6 @@ description = "Automatically add type hints for Django powered applications."
 authors = [
     {name = "Viicos", email = "65306057+Viicos@users.noreply.github.com"}
 ]
-readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -33,7 +32,7 @@ dependencies = [
     "typing-extensions>=4.2.0; python_version < '3.11'",
 ]
 license = {file = "LICENSE"}
-dynamic = ["version"]
+dynamic = ["version", "readme"]
 
 [project.urls]
 Homepage = "https://github.com/Viicos/django-autotyping"
