@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from django.apps.registry import Apps
 from django.conf import LazySettings
+from django.core.management import get_commands
 from django.db.models import NOT_PROVIDED, DateField, Field
 from django.urls import get_resolver
 from libcst.codemod.visitors import ImportItem
@@ -11,7 +12,7 @@ from libcst.codemod.visitors import ImportItem
 from django_autotyping.typing import ModelType
 
 from ..codemods._utils import to_pascal
-from ._management_utils import ManagementCommand
+from ._management_utils import CommandInfo, get_commands_infos
 from ._url_utils import PathInfo, get_paths_infos
 
 
@@ -55,8 +56,8 @@ class DjangoStubbingContext:
         return get_paths_infos(get_resolver())
 
     @property
-    def management_commands(self) -> dict[str, ManagementCommand]:
-        ...
+    def management_commands_info(self) -> dict[str, CommandInfo]:
+        return get_commands_infos(get_commands())
 
     def is_duplicate(self, model: ModelType) -> bool:
         """Whether the model has a duplicate name with another model in a different app."""
