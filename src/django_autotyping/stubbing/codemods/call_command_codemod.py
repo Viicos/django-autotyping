@@ -31,6 +31,7 @@ class CallCommandCodemod(StubVisitorBasedCodemod):
 
     !!! info "Limited support"
         TBD
+        https://github.com/microsoft/pylance-release/discussions/4148
     """
 
     STUB_FILES = {"core/management/__init__.pyi"}
