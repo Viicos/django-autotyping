@@ -15,7 +15,7 @@ from .base import InsertAfterImportsVisitor, StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
 
 if TYPE_CHECKING:
-    from ..django_context import PathInfo
+    from ..django_context._url_utils import PathInfo
 
 # `SupportsStr` is a Protocol that supports `__str__`.
 # This should be equivalent to `object`, but is used to be

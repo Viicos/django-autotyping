@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import keyword
 import re
 from dataclasses import dataclass
 
@@ -85,7 +86,7 @@ def build_typed_dict(
         leadind_line: Whether an empty leading line should be added before the class definition.
 
     """
-    functional = any(not attr.name.isidentifier() for attr in attributes)
+    functional = any(keyword.iskeyword(attr.name) for attr in attributes)
     leading_lines = [cst.EmptyLine(indent=False)] if leading_line else []
     if not functional:
         body: list[cst.SimpleStatementLine] = []
@@ -130,7 +131,8 @@ def build_typed_dict(
                             cst.Dict(
                                 elements=[
                                     cst.DictElement(
-                                        key=cst.SimpleString(f'"{attr.name}"'), value=cst.Name(attr.marked_annotation)
+                                        key=cst.SimpleString(f'"{attr.name}"'),
+                                        value=helpers.parse_template_expression(attr.marked_annotation),
                                     )
                                     for attr in attributes
                                 ]

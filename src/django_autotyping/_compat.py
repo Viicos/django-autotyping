@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 
 if sys.version_info >= (3, 11):
-    from typing import NotRequired, Required, Self, TypeAlias, Unpack
+    from typing import NotRequired, Required, Self, TypeAlias, TypeGuard, Unpack
 else:
-    from typing_extensions import NotRequired, Required, Self, TypeAlias, Unpack  # noqa: F401
+    from typing_extensions import NotRequired, Required, Self, TypeAlias, TypeGuard, Unpack  # noqa: F401
 
 if sys.version_info >= (3, 10):
     from types import NoneType
