@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ("ForwardRelationTypingCodemod", "RulesT", "rules", "gather_codemods")
+__all__ = ("ForwardRelationTypingCodemod", "RulesT", "gather_codemods", "rules")
 
 from typing import Container, Literal
 

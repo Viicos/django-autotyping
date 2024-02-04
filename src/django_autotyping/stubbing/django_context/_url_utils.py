@@ -30,7 +30,7 @@ class PathArguments:
 
     def is_mergeable(self, arguments: dict[str, bool]) -> bool:
         """Return whether the keys of the provided arguments are the same as the current instance."""
-        return set(arg[0] for arg in self.arguments) == set(arguments)
+        return {arg[0] for arg in self.arguments} == set(arguments)
 
     def with_new_arguments(self, arguments: dict[str, bool]) -> PathArguments:
         new_arguments = frozenset((k, False if not arguments[k] else is_required) for k, is_required in self.arguments)

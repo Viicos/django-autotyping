@@ -90,7 +90,7 @@ class CallCommandCodemod(StubVisitorBasedCodemod):
             old_node=get_param(overload, "command_name"), annotation=cst.Annotation(cst.Name("BaseCommand"))
         )
 
-        return cst.FlattenSentinel(overloads + [fallback_overload])
+        return cst.FlattenSentinel([*overloads, fallback_overload])
 
     def _mutate_CallCommandFunctionDef(
         self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
@@ -186,4 +186,4 @@ class CallCommandCodemod(StubVisitorBasedCodemod):
             old_node=get_param(overload, "command_name"), annotation=cst.Annotation(cst.Name("BaseCommand"))
         )
 
-        return cst.FlattenSentinel(overloads + [fallback_overload])
+        return cst.FlattenSentinel([*overloads, fallback_overload])

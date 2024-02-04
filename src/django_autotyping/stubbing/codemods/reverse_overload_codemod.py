@@ -175,4 +175,4 @@ class ReverseOverloadCodemod(StubVisitorBasedCodemod):
             annotation=cst.Annotation(helpers.parse_template_expression("Callable[..., Any] | None")),
         )
 
-        return cst.FlattenSentinel(overloads + [overload])
+        return cst.FlattenSentinel([*overloads, overload])
