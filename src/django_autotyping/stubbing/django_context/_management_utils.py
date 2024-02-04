@@ -105,6 +105,7 @@ def _iter_actions(
     arg_infos = parent_args + [ArgInfo(nargs=action.nargs, dest=action.dest) for action in pos_actions]
     options = {**parent_options, **get_options_infos(parser, is_subparser=is_subparser)}
 
+    # TODO shouldn't yield if subparsers are required
     yield arg_infos, options
 
     subparsers_actions = [

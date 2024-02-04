@@ -29,7 +29,7 @@ __all__ = (
     "gather_codemods",
 )
 
-RulesT: TypeAlias = Literal["DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015", "DJAS016", "DJAS017"]
+RulesT: TypeAlias = Literal["DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015", "DJAS016"]
 
 rules: list[tuple[RulesT, type[StubVisitorBasedCodemod]]] = [
     ("DJAS001", ForwardRelationOverloadCodemod),
@@ -39,12 +39,12 @@ rules: list[tuple[RulesT, type[StubVisitorBasedCodemod]]] = [
     ("DJAS011", AuthFunctionsCodemod),
     ("DJAS015", ReverseOverloadCodemod),
     ("DJAS016", SettingCodemod),
-    ("DJAS017", CallCommandCodemod),
+    # ("DJAS017", CallCommandCodemod),
 ]
 
 
 def gather_codemods(
-    ignore: Container[RulesT] = [], include: Container[RulesT] = ["DJAS017"]
+    ignore: Container[RulesT] = [], include: Container[RulesT] = []
 ) -> list[type[StubVisitorBasedCodemod]]:
     if include:
         return [rule[1] for rule in rules if rule[0] in include]
