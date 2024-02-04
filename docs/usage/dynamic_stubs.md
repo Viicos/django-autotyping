@@ -11,7 +11,8 @@ python manage.py generate_stubs --local-stubs-dir typings/ --ignore DJAS001
 The following is a list of the available rules related to dynamic stubs:
 
 - [`DJAS001`][django_autotyping.stubbing.codemods.forward_relation_overload_codemod.ForwardRelationOverloadCodemod]: add overloads to the `__init__` methods of related fields.
-- [`DJAS002`][django_autotyping.stubbing.codemods.create_overload_codemod.CreateOverloadCodemod]: Add overloads to methods creating an instance of a model.
+- [`DJAS002`][django_autotyping.stubbing.codemods.create_overload_codemod.CreateOverloadCodemod]: Add overloads to the [`create`][django.db.models.query.QuerySet.create] method.
+- [`DJAS003`][django_autotyping.stubbing.codemods.model_init_overload_codemod.ModelInitOverloadCodemod]: Add overloads to the [`Model.__init__`][django.db.models.Model] method.
 - [`DJAS010`][django_autotyping.stubbing.codemods.get_model_overload_codemod.GetModelOverloadCodemod]: Add overloads to the [`apps.get_model`][django.apps.apps.get_model] method.
 - [`DJAS011`][django_autotyping.stubbing.codemods.auth_functions_codemod.AuthFunctionsCodemod]: Add a custom return type to the to auth related functions.
 - [`DJAS015`][django_autotyping.stubbing.codemods.reverse_overload_codemod.ReverseOverloadCodemod]: Add overloads to the [`reverse`][django.urls.reverse] function.

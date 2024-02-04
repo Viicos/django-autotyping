@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from typing import TYPE_CHECKING, ClassVar, Sequence, TypeVar, cast
 
 import libcst as cst
@@ -56,10 +57,11 @@ class InsertAfterImportsVisitor(ContextAwareTransformer):
         )
 
 
-class StubVisitorBasedCodemod(VisitorBasedCodemodCommand):
+class StubVisitorBasedCodemod(VisitorBasedCodemodCommand, ABC):
     """The base class for all codemods used for custom stub files."""
 
     STUB_FILES: ClassVar[set[str]]
+    """A set of stub files the codemod should apply to."""
 
     def __init__(self, context: CodemodContext) -> None:
         super().__init__(context)

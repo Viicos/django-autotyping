@@ -17,7 +17,7 @@ else:
     FlattenFunctionDef = cst.FunctionDef
 
 
-RulesT: TypeAlias = Literal["DJA001", "DJAS001", "DJAS002", "DJAS010", "DJAS011", "DJAS015", "DJAS016"]
+RulesT: TypeAlias = Literal["DJA001", "DJAS001", "DJAS002", "DJAS003", "DJAS010", "DJAS011", "DJAS015", "DJAS016"]
 
 
 class AutotypingSettingsDict(TypedDict, total=False):
@@ -87,11 +87,12 @@ class StubsGenerationSettingsDict(TypedDict, total=False):
     This is why, by default, this configuration attribute defaults to `True`. If set to `False`,
     `django-autotyping` will try its best to determine required fields, namely by checking if:
 
-    - the field can be `null`
+    - the field can be `null` or `blank`
+    - the field is a primary key
     - the field has a default or a database default value set
     - the field is a subclass of `DateField` and has `auto_now` or `auto_now_add` set to `True`.
 
-    Affected rules: `DJAS002`.
+    Affected rules: `DJAS002`, `DJAS003`.
     """
 
     ALLOW_REVERSE_ARGS: bool

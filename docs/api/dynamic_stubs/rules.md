@@ -18,6 +18,16 @@
         members:
             - STUB_FILES
 
+::: django_autotyping.stubbing.codemods.model_init_overload_codemod.ModelInitOverloadCodemod
+    options:
+        show_bases: false
+        show_source: false
+        show_root_heading: true
+        show_root_full_path: false
+        show_if_no_docstring: true
+        members:
+            - STUB_FILES
+
 ::: django_autotyping.stubbing.codemods.get_model_overload_codemod.GetModelOverloadCodemod
     options:
         show_bases: false
