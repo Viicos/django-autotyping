@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.3">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.7">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.f2e4d321.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -924,9 +924,12 @@
 <p>The following is a list of the available rules related to dynamic stubs:</p>
 <ul>
 <li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.forward_relation_overload_codemod.ForwardRelationOverloadCodemod"><code>DJAS001</code></a>: add overloads to the <code>__init__</code> methods of related fields.</li>
-<li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.create_overload_codemod.CreateOverloadCodemod"><code>DJAS002</code></a>: Add overloads to methods creating an instance of a model.</li>
+<li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.create_overload_codemod.CreateOverloadCodemod"><code>DJAS002</code></a>: Add overloads to the <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/querysets/#django.db.models.query.QuerySet.create"><code>create</code></a> and <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/querysets/#django.db.models.query.QuerySet.acreate"><code>acreate</code></a> methods.</li>
+<li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.model_init_overload_codemod.ModelInitOverloadCodemod"><code>DJAS003</code></a>: Add overloads to the <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/instances/#django.db.models.Model"><code>Model.__init__</code></a> method.</li>
 <li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.get_model_overload_codemod.GetModelOverloadCodemod"><code>DJAS010</code></a>: Add overloads to the <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/applications/#django.apps.apps.get_model"><code>apps.get_model</code></a> method.</li>
-<li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.reverse_overload_codemod.ReverseOverloadCodemod"><code>DJAS011</code></a>: Add overloads to the <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/urlresolvers/#django.urls.reverse"><code>reverse</code></a> function.</li>
+<li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.auth_functions_codemod.AuthFunctionsCodemod"><code>DJAS011</code></a>: Add a custom return type to the to auth related functions.</li>
+<li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.reverse_overload_codemod.ReverseOverloadCodemod"><code>DJAS015</code></a>: Add overloads to the <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/urlresolvers/#django.urls.reverse"><code>reverse</code></a> function.</li>
+<li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.settings_codemod.SettingCodemod"><code>DJAS016</code></a>: Add typing to the Django settings object.</li>
 </ul>
 <h2 id="type-checker-configuration">Type checker configuration<a class="headerlink" href="#type-checker-configuration" title="Permanent link">&para;</a></h2>
 <p>Before making use of this feature, you must configure your type checker to discover your custom stubs:</p>
@@ -972,11 +975,6 @@ the <code>STUBS_GENERATION</code> key:</p>
 
 <h2 id="django_autotyping.app_settings.StubsGenerationSettings.LOCAL_STUBS_DIR" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">LOCAL_STUBS_DIR</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
 
 <a href="#django_autotyping.app_settings.StubsGenerationSettings.LOCAL_STUBS_DIR" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -994,11 +992,6 @@ the <code>STUBS_GENERATION</code> key:</p>
 
 <h2 id="django_autotyping.app_settings.StubsGenerationSettings.SOURCE_STUBS_DIR" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">SOURCE_STUBS_DIR</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
 
 <a href="#django_autotyping.app_settings.StubsGenerationSettings.SOURCE_STUBS_DIR" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1017,11 +1010,6 @@ to the first entry in site packages.</p>
 
 <h2 id="django_autotyping.app_settings.StubsGenerationSettings.ALLOW_PLAIN_MODEL_REFERENCES" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">ALLOW_PLAIN_MODEL_REFERENCES</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
 
 <a href="#django_autotyping.app_settings.StubsGenerationSettings.ALLOW_PLAIN_MODEL_REFERENCES" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1042,11 +1030,6 @@ to the first entry in site packages.</p>
 
 <h2 id="django_autotyping.app_settings.StubsGenerationSettings.ALLOW_NONE_SET_TYPE" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">ALLOW_NONE_SET_TYPE</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
 
 <a href="#django_autotyping.app_settings.StubsGenerationSettings.ALLOW_NONE_SET_TYPE" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1070,11 +1053,6 @@ only allows model instances and <code>None</code> to be set.</p>
 
 <h2 id="django_autotyping.app_settings.StubsGenerationSettings.MODEL_FIELDS_OPTIONAL" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">MODEL_FIELDS_OPTIONAL</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
 
 <a href="#django_autotyping.app_settings.StubsGenerationSettings.MODEL_FIELDS_OPTIONAL" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1092,13 +1070,14 @@ a default value provided, the database could have triggers implemented that woul
 This is why, by default, this configuration attribute defaults to <code>True</code>. If set to <code>False</code>,
 <code>django-autotyping</code> will try its best to determine required fields, namely by checking if:</p>
 <ul>
-<li>the field can be <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/fields/#django.db.models.Field.null"><code>null</code></a></li>
+<li>the field can be <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/fields/#django.db.models.Field.null"><code>null</code></a> or <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/fields/#django.db.models.Field.null"><code>blank</code></a></li>
+<li>the field is a primary key</li>
 <li>the field has a default or a database default value set</li>
 <li>the field is a subclass of <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/fields/#django.db.models.DateField"><code>DateField</code></a> and has
   <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/fields/#django.db.models.DateField.auto_now"><code>auto_now</code></a> or <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/models/fields/#django.db.models.DateField.auto_now_add"><code>auto_now_add</code></a>
   set to <code>True</code>.</li>
 </ul>
-<p>Affected rules: <code>DJAS002</code>.</p>
+<p>Affected rules: <code>DJAS002</code>, <code>DJAS003</code>.</p>
   </div>
 
 </div>
@@ -1109,11 +1088,6 @@ This is why, by default, this configuration attribute defaults to <code>True</co
 
 <h2 id="django_autotyping.app_settings.StubsGenerationSettings.ALLOW_REVERSE_ARGS" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">ALLOW_REVERSE_ARGS</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
 
 <a href="#django_autotyping.app_settings.StubsGenerationSettings.ALLOW_REVERSE_ARGS" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1124,7 +1098,7 @@ This is why, by default, this configuration attribute defaults to <code>True</co
 <p>By default, this is set to <code>False</code> to avoid having too many overloads being generated.
 Moreover, only tuples can be type checked, and most people are using lists for this argument.
 Instead, it is recommended to use the <code>kwargs</code> argument.</p>
-<p>Affected rules: <code>DJAS011</code>.</p>
+<p>Affected rules: <code>DJAS015</code>.</p>
   </div>
 
 </div>
@@ -1185,10 +1159,10 @@ Instead, it is recommended to use the <code>kwargs</code> argument.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["content.action.view", "content.code.copy"], "search": "../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.action.view", "content.code.copy"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7c377c4.min.js"></script>
+      <script src="../../assets/javascripts/bundle.caa56a14.min.js"></script>
       
     
   </body>

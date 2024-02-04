@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.3">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.7">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.f2e4d321.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -390,7 +390,7 @@
         <li class="md-nav__item">
   <a href="#dynamic-stubs-dont-solve-everything" class="md-nav__link">
     <span class="md-ellipsis">
-      Dynamic stubs dont' solve everything
+      Dynamic stubs don't solve everything
     </span>
   </a>
   
@@ -774,7 +774,7 @@
         <li class="md-nav__item">
   <a href="#dynamic-stubs-dont-solve-everything" class="md-nav__link">
     <span class="md-ellipsis">
-      Dynamic stubs dont' solve everything
+      Dynamic stubs don't solve everything
     </span>
   </a>
   
@@ -849,19 +849,23 @@ To get immediate feedback on these errors along with the inferred types of your 
 <p>Does this mean we can get all the nice auto-completions and features provided by mypy and the Django plugin?</p>
 <p>Not really. While LSP implementations for mypy <a href="https://github.com/python-lsp/pylsp-mypy/">are available</a>, they seem to be lacking
 important features that you would expect in an IDE. You do get the correct types from the mypy plugin, but you are missing all the highlights/auto-completions:</p>
-<p><img alt="mypy IDE integration" src="../assets/mypy-vscode-extension.png" /></p>
+<figure>
+<p><img alt="mypy IDE integration" src="../assets/mypy-vscode-extension.png" />
+  </p>
+<figcaption>The revealed type by Mypy is correct, but no auto-completion is provided on the 'blog' argument</figcaption>
+</figure>
 <h2 id="using-customized-stubs-for-your-project">Using customized stubs for your project<a class="headerlink" href="#using-customized-stubs-for-your-project" title="Permanent link">&para;</a></h2>
 <p>To overcome this issue, we need to find a solution that would ideally:</p>
 <ul>
 <li>Be agnostic of any type checker, that is only using the existing Python typing logic.</li>
 <li>Avoid having to manually annotate your code, if possible.</li>
 </ul>
-<p><code>django-autotyping</code> will take advantage of the ability to use a custom type stubs directory (you might need to configure your type checker TODO link), where a customized copy of <code>django-stubs</code> will be created. Because <code>django-autotyping</code> knows the current
+<p><code>django-autotyping</code> will take advantage of the ability to use a custom type stubs directory (you might need to <a href="../usage/dynamic_stubs/#type-checker-configuration">configure your type checker</a>), where a customized copy of <code>django-stubs</code> will be created. Because <code>django-autotyping</code> knows the current
 state of your application (e.g. the available models, views), it will generate additional overloads when possible, matching string
 references to your models for example.</p>
 <details class="example" open="open">
 <summary>Example</summary>
-<p>A smart feature available in type checkers is to add <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.overload">overloads</a> to the <code>__init__</code> method
+<p>A smart feature available in type checkers is to add <a class="autorefs autorefs-external" href="https://docs.python.org/3.13/library/typing.html#typing.overload">overloads</a> to the <code>__init__</code> method
 of a class to influence the constructed object type. With the following:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># __set__ value type</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">_ST</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;_ST&quot;</span><span class="p">)</span>
@@ -902,7 +906,7 @@ of a class to influence the constructed object type. With the following:</p>
 <li>Complete IDE support!</li>
 </ul>
 </details>
-<h2 id="dynamic-stubs-dont-solve-everything">Dynamic stubs dont' solve everything<a class="headerlink" href="#dynamic-stubs-dont-solve-everything" title="Permanent link">&para;</a></h2>
+<h2 id="dynamic-stubs-dont-solve-everything">Dynamic stubs don't solve everything<a class="headerlink" href="#dynamic-stubs-dont-solve-everything" title="Permanent link">&para;</a></h2>
 <p>Even if the generated dynamic stubs cover a lot of cases, explicit annotations are still required sometimes.
 Consider the use case of reverse relationships:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># On a blog instance, the related blog posts can be accessed:</span>
@@ -962,10 +966,10 @@ of automatically add type hints to your source code.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.action.view", "content.code.copy"], "search": "../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.action.view", "content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7c377c4.min.js"></script>
+      <script src="../assets/javascripts/bundle.caa56a14.min.js"></script>
       
     
   </body>
