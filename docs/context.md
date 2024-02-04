@@ -58,7 +58,10 @@ Does this mean we can get all the nice auto-completions and features provided by
 Not really. While LSP implementations for mypy [are available](https://github.com/python-lsp/pylsp-mypy/), they seem to be lacking
 important features that you would expect in an IDE. You do get the correct types from the mypy plugin, but you are missing all the highlights/auto-completions:
 
-![mypy IDE integration](assets/mypy-vscode-extension.png)
+<figure markdown>
+  ![mypy IDE integration](assets/mypy-vscode-extension.png)
+  <figcaption>The revealed type by Mypy is correct, but no auto-completion is provided on the 'blog' argument</figcaption>
+</figure>
 
 ## Using customized stubs for your project
 
@@ -67,7 +70,7 @@ To overcome this issue, we need to find a solution that would ideally:
 - Be agnostic of any type checker, that is only using the existing Python typing logic.
 - Avoid having to manually annotate your code, if possible.
 
-`django-autotyping` will take advantage of the ability to use a custom type stubs directory (you might need to configure your type checker TODO link), where a customized copy of `django-stubs` will be created. Because `django-autotyping` knows the current
+`django-autotyping` will take advantage of the ability to use a custom type stubs directory (you might need to [configure your type checker](usage/dynamic_stubs.md#type-checker-configuration)), where a customized copy of `django-stubs` will be created. Because `django-autotyping` knows the current
 state of your application (e.g. the available models, views), it will generate additional overloads when possible, matching string
 references to your models for example.
 
@@ -118,7 +121,7 @@ references to your models for example.
     - Support for nullable fields
     - Complete IDE support!
 
-## Dynamic stubs dont' solve everything
+## Dynamic stubs don't solve everything
 
 Even if the generated dynamic stubs cover a lot of cases, explicit annotations are still required sometimes.
 Consider the use case of reverse relationships:

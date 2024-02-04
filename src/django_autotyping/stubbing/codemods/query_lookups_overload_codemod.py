@@ -26,7 +26,7 @@ GET_MODEL_DEF_MATCHER = m.FunctionDef(name=m.Name("get"))
 
 
 class QueryLookupsOverloadCodemod(StubVisitorBasedCodemod):
-    """A codemod that will add overloads to the `__init__` methods of related fields.
+    """TODO
 
     Rule identifier: `DJAS003`.
     """
