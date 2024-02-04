@@ -215,4 +215,3 @@ class ModelCreationBaseCodemod(StubVisitorBasedCodemod, ABC):
     @abstractmethod
     def get_self_annotation(self, model_name: str, class_name: str) -> cst.BaseExpression:
         """Return the annotation to be set on the `self` parameter."""
-        pass

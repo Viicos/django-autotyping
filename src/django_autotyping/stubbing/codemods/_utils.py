@@ -20,10 +20,10 @@ def get_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
     """Get the `Param` node matching `param_name`."""
     try:
         return next(param for param in node.params.params if param.name.value == param_name)
-    except StopIteration:
+    except StopIteration as e:
         raise RuntimeError(
             f"The `FunctionDef` node with name {node.name.value!r} does not have any parameter named {param_name!r}"
-        )
+        ) from e
 
 
 def get_kw_param(node: cst.FunctionDef, param_name: str) -> cst.Param:

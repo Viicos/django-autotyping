@@ -69,7 +69,7 @@ class Command(BaseCommand):
         codemods = gather_codemods(options["ignore"])
 
         # TODO codemods should specify which type of file they apply to.
-        model_filenames = set(model_info.filename for model_info in django_context.model_infos)
+        model_filenames = {model_info.filename for model_info in django_context.model_infos}
 
         for filename in model_filenames:
             intput_source = Path(filename).read_text("utf-8")

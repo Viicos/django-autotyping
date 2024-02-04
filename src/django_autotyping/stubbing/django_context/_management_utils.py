@@ -119,13 +119,13 @@ def _iter_actions(
             yield from _iter_actions(
                 parser=subparser_action.choices[act.dest],
                 is_subparser=True,
-                parent_args=arg_infos
-                + [
+                parent_args=[
+                    *arg_infos,
                     ArgInfo(
                         nargs=None,
                         dest=subparser_action.dest if subparser_action.dest != SUPPRESS else None,
                         subparser_arg=act.dest,
-                    )
+                    ),
                 ],
                 parent_options=options,
             )

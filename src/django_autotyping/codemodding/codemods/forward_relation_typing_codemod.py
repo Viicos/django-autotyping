@@ -186,7 +186,6 @@ def _get_attribute_path(node: cst.Name | cst.Attribute) -> str:
 
     if isinstance(node.value, cst.Attribute):
         prefix = _get_attribute_path(node.value)
-        print("prefix", prefix)
     else:
         prefix = node.value.value
     return f"{prefix}.{node.attr.value}"

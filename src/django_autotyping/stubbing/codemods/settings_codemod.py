@@ -130,8 +130,7 @@ class SettingCodemod(StubVisitorBasedCodemod):
 
         for setting_name, setting_typing_conf in GLOBAL_SETTINGS.items():
             if (
-                setting_typing_conf.get("no_default")
-                and setting_name not in all_settings
+                (setting_typing_conf.get("no_default") and setting_name not in all_settings)
                 or setting_typing_conf.get("added_in", (0,)) > DJANGO_VERSION
                 or setting_typing_conf.get("removed_in", (float("inf"),)) <= DJANGO_VERSION
             ):
