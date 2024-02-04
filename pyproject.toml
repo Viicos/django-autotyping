@@ -29,7 +29,7 @@ classifiers = [
 dependencies = [
     "django",
     "libcst>=0.4.10",
-    "typing-extensions>=4.2.0; python_version < '3.11'",
+    "typing-extensions>=4.4.0; python_version < '3.12'",
 ]
 license = {file = "LICENSE"}
 dynamic = ["version", "readme"]

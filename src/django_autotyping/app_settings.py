@@ -78,13 +78,14 @@ class StubsGenerationSettings:
     This is why, by default, this configuration attribute defaults to `True`. If set to `False`,
     `django-autotyping` will try its best to determine required fields, namely by checking if:
 
-    - the field can be [`null`][django.db.models.Field.null]
+    - the field can be [`null`][django.db.models.Field.null] or [`blank`][django.db.models.Field.null]
+    - the field is a primary key
     - the field has a default or a database default value set
     - the field is a subclass of [`DateField`][django.db.models.DateField] and has
       [`auto_now`][django.db.models.DateField.auto_now] or [`auto_now_add`][django.db.models.DateField.auto_now_add]
       set to `True`.
 
-    Affected rules: `DJAS002`.
+    Affected rules: `DJAS002`, `DJAS003`.
     """
 
     ALLOW_REVERSE_ARGS: bool = False

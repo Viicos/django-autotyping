@@ -31,7 +31,7 @@ class DjangoStubbingContext:
 
     @property
     def models(self) -> list[ModelType]:
-        """All the defined models."""
+        """All the defined models. Abstract models are not included."""
         return self.apps.get_models()
 
     @property
@@ -70,17 +70,23 @@ class DjangoStubbingContext:
         """
         return self._get_model_alias(model) if self.is_duplicate(model) else model.__name__
 
-    def get_field_nullability(self, field: Field) -> bool:
+    def is_required_field(self, field: Field) -> bool:
         """Determine if a field requires a value to be provided when instantiating a model.
 
         In practice, there isn't any reliable way to determine this (even if Django does not provide
         a default, things could be set at the database level). However, we can make some assumptions
         regarding the field instance, see https://forum.djangoproject.com/t/26357 for more details.
         """
-        # TODO use the same logic as the mypy plugin
         return (
             field.null
+            or field.blank
+            or field.primary_key
             or field.has_default()
             or getattr(field, "db_default", NOT_PROVIDED) is not NOT_PROVIDED  # No `has_db_default` method :/
             or (isinstance(field, DateField) and (field.auto_now or field.auto_now_add))
         )
+
+    def is_nullable_field(self, field: Field) -> bool:
+        """Determine if a field can be set to `None` when instantiating a model."""
+
+        return field.null
