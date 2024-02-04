@@ -61,6 +61,8 @@ plugins:
   - search
   - autorefs
   - mkdocstrings:
+      # TODO remove when https://github.com/mkdocstrings/python/pull/130 eventually gets merged:
+      custom_templates: _templates
       handlers:
         python:
           paths: [src]

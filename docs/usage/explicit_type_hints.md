@@ -10,7 +10,7 @@ python manage.py add_type_hints --project-dir src/ --diff --ignore DJA001
 ```
 
 !!! warning "Still work in progress"
-    This functionality is still work in progess.
+    This functionality is still work in progress.
 
 ## Available rules
 
