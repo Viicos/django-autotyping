@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import os
 import shutil
 import site
+from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import libcst as cst
@@ -20,20 +23,44 @@ def run_codemods(
 ) -> None:
     django_stubs_dir = stubs_settings.SOURCE_STUBS_DIR or _get_django_stubs_dir()
 
+    files_codemods_dct: defaultdict[str, list[type[StubsGenerationSettings]]] = {}
+
     for codemod in codemods:
         for stub_file in codemod.STUB_FILES:
-            context = CodemodContext(
-                filename=stub_file, scratch={"django_context": django_context, "stubs_settings": stubs_settings}
-            )
-            transformer = codemod(context)
-            source_file = django_stubs_dir / stub_file
+            files_codemods_dct[stub_file].append(codemod)
+
+    with ProcessPoolExecutor(min(len(codemods), os.cpu_count() or 1)) as executor:
+        futures = {
+            executor.submit(
+                _run_codemods_on_file, codemods, django_context, stubs_settings, django_stubs_dir / stub_file
+            ): stub_file
+            for stub_file, codemods in files_codemods_dct.items()
+        }
+        for future in as_completed(futures):
+            stub_file = futures[future]
+            output_code = future.result()
             target_file = stubs_settings.LOCAL_STUBS_DIR / "django-stubs" / stub_file
+            target_file.write_text(output_code, encoding="utf-8")
 
-            input_code = source_file.read_text(encoding="utf-8")
-            input_module = cst.parse_module(input_code)
-            output_module = transformer.transform_module(input_module)
 
-            target_file.write_text(output_module.code, encoding="utf-8")
+def _run_codemods_on_file(
+    codemods: list[type[StubVisitorBasedCodemod]],
+    django_context: DjangoStubbingContext,
+    stubs_settings: StubsGenerationSettings,
+    source_file: Path,
+) -> str:
+    input_code = source_file.read_text(encoding="utf-8")
+    input_module = cst.parse_module(input_code)
+
+    for codemod in codemods:
+        context = CodemodContext(
+            filename=source_file.name, scratch={"django_context": django_context, "stubs_settings": stubs_settings}
+        )
+        transformer = codemod(context)
+
+        input_module = transformer.transform_module(input_module)
+
+    return input_module.code
 
 
 def _get_django_stubs_dir() -> Path:
@@ -49,7 +76,6 @@ def create_local_django_stubs(stubs_dir: Path, source_django_stubs: Path | None 
 
     If `source_django_stubs` is not provided, the first entry in site packages will be used.
     """
-    stubs_dir.mkdir(exist_ok=True)
     source_django_stubs = source_django_stubs or _get_django_stubs_dir()
     if not (stubs_dir / "django-stubs").is_dir():
         shutil.copytree(source_django_stubs, stubs_dir / "django-stubs")

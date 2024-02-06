@@ -33,6 +33,7 @@ testfiles_params = pytest.mark.parametrize(
 
 @pytest.fixture
 def local_stubs(tmp_path) -> Path:
+    tmp_path.mkdir(exist_ok=True)
     create_local_django_stubs(tmp_path)
     return tmp_path
 
