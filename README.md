@@ -46,7 +46,7 @@ The application is configurable through the `AUTOTYPING` dict:
 ```python
 AUTOTYPING = {
     "STUBS_GENERATION": {
-        "STUBS_DIR": Path(BASE_DIR, "typings"),
+        "LOCAL_STUBS_DIR": Path(BASE_DIR, "typings"),
     }
 }
 ```
