@@ -46,7 +46,7 @@ class StubsGenerationSettings:
     ALLOW_PLAIN_MODEL_REFERENCES: bool = True
     """Whether string references in the form of `{model_name}` should be generated in overloads.
 
-    If set to `True`, both `{model_name}` and `{model_name}.{app_label}` are allowed
+    If set to `True`, both `{model_name}` and `{app_label}.{model_name}` are allowed
     (unless the model name has a duplicate in a different app).
 
     Affected rules: `DJAS001`.
