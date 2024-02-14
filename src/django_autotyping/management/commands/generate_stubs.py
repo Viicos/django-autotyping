@@ -54,4 +54,8 @@ class Command(BaseCommand):
         codemods = gather_codemods(options["ignore"])
 
         django_context = DjangoStubbingContext(apps, settings)
-        run_codemods(codemods, django_context, stubs_settings)
+        results = run_codemods(codemods, django_context, stubs_settings)
+        for stub_file, content in results.items():
+            self.stdout.write(f"Writing contents to {stub_file}")
+            target_file = options["local_stubs_dir"] / "django-stubs" / stub_file
+            target_file.write_text(content, encoding="utf-8")

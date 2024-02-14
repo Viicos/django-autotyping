@@ -20,27 +20,30 @@ def run_codemods(
     codemods: list[type[StubVisitorBasedCodemod]],
     django_context: DjangoStubbingContext,
     stubs_settings: StubsGenerationSettings,
-) -> None:
+) -> dict[str, str]:
+    """Given a list of codemods, apply them to the related files.
+
+    Returns:
+        A mapping between the stub file name and the new file content.
+    """
     django_stubs_dir = stubs_settings.SOURCE_STUBS_DIR or _get_django_stubs_dir()
 
-    files_codemods_dct: defaultdict[str, list[type[StubsGenerationSettings]]] = {}
-
+    # From 'codemod -> set[files]' to 'file -> list[codemods]'
+    # (different codemods could apply to the same file(s))
+    files_codemods_dct: defaultdict[str, list[type[StubsGenerationSettings]]] = defaultdict(list)
     for codemod in codemods:
         for stub_file in codemod.STUB_FILES:
             files_codemods_dct[stub_file].append(codemod)
 
-    with ProcessPoolExecutor(min(len(codemods), os.cpu_count() or 1)) as executor:
+    with ProcessPoolExecutor(min(len(files_codemods_dct), os.cpu_count() or 1)) as executor:
         futures = {
             executor.submit(
                 _run_codemods_on_file, codemods, django_context, stubs_settings, django_stubs_dir / stub_file
             ): stub_file
             for stub_file, codemods in files_codemods_dct.items()
         }
-        for future in as_completed(futures):
-            stub_file = futures[future]
-            output_code = future.result()
-            target_file = stubs_settings.LOCAL_STUBS_DIR / "django-stubs" / stub_file
-            target_file.write_text(output_code, encoding="utf-8")
+
+        return {futures[future]: future.result() for future in as_completed(futures)}
 
 
 def _run_codemods_on_file(
