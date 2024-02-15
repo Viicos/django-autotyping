@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 from __future__ import annotations
 
 import dataclasses
@@ -23,6 +24,8 @@ testfiles_params = pytest.mark.parametrize(
         ("djas001.py", ["DJAS001"], StubsGenerationSettings()),
         ("djas001_no_plain_references.py", ["DJAS001"], StubsGenerationSettings(ALLOW_PLAIN_MODEL_REFERENCES=False)),
         ("djas001_allow_non_set_type.py", ["DJAS001"], StubsGenerationSettings(ALLOW_NONE_SET_TYPE=True)),
+        ("djas002_003.py", ["DJAS002", "DJAS003"], StubsGenerationSettings()),
+        ("djas002_003_no_model_fields_optional.py", ["DJAS002", "DJAS003"], StubsGenerationSettings(MODEL_FIELDS_OPTIONAL=False)),
         ("djas010.py", ["DJAS010"], StubsGenerationSettings()),
         ("djas011.py", ["DJAS011"], StubsGenerationSettings()),
         ("djas016.py", ["DJAS016"], StubsGenerationSettings()),

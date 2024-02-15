@@ -77,7 +77,7 @@ class DjangoStubbingContext:
         a default, things could be set at the database level). However, we can make some assumptions
         regarding the field instance, see https://forum.djangoproject.com/t/26357 for more details.
         """
-        return (
+        return not (
             field.null
             or field.blank
             or field.primary_key
