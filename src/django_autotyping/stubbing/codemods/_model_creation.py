@@ -53,7 +53,7 @@ class FieldType(TypedDict):
 # account explicit parametrization.
 FIELD_SET_TYPES_MAP: dict[type[Field], FieldType] = {
     AutoField: {
-        "type": "Combinable | int | str",
+        "type": "int | str | Combinable",
     },
     IntegerField: {"type": "float | int | str | Combinable"},
     FloatField: {"type": "float | int | str | Combinable"},
@@ -66,17 +66,19 @@ FIELD_SET_TYPES_MAP: dict[type[Field], FieldType] = {
         "type": "str | int | Callable[..., Any] | Combinable",  # TODO, Callable, really?
         "typing_imports": ["Any", "Callable"],
     },
+    # For datetime related fields, we use `datetime.x` because `datetime`
+    # is already imported in `db/models/manager.pyi`:
     DateTimeField: {
-        "type": "str | datetime | date | Combinable",
-        "extra_imports": [ImportItem("datetime", "date"), ImportItem("datetime", "datetime")],
+        "type": "str | datetime.datetime | datetime.Date | Combinable",
+        "extra_imports": [ImportItem("datetime")],
     },
     DateField: {
-        "type": "str | date | Combinable",
-        "extra_imports": [ImportItem("datetime", "date")],
+        "type": "str | datetime.date | Combinable",
+        "extra_imports": [ImportItem("datetime")],
     },
     TimeField: {
-        "type": "str | time | datetime | Combinable",
-        "extra_imports": [ImportItem("datetime", "time"), ImportItem("datetime", "datetime")],
+        "type": "str | datetime.time | datetime.datetime | Combinable",
+        "extra_imports": [ImportItem("datetime")],
     },
     UUIDField: {"type": "str | UUID", "extra_imports": [ImportItem("uuid", "UUID")]},
     Field: {"type": "Any", "typing_imports": ["Any"]},
@@ -110,8 +112,8 @@ class ModelCreationBaseCodemod(StubVisitorBasedCodemod, ABC):
             obj="Combinable",
         )
 
-        # Even though these are most likely included, we import them for safety:
-        self.add_typing_imports(["TypedDict", "TypeVar", "Unpack", "overload"])
+        # Even though most of them are likely included, we import them for safety:
+        self.add_typing_imports(["TypedDict", "TypeVar", "Required", "Unpack", "overload"])
 
     def build_model_kwargs(self) -> list[cst.ClassDef]:
         """Return a list of class definition representing the typed dicts to be used for overloads."""
@@ -133,11 +135,17 @@ class ModelCreationBaseCodemod(StubVisitorBasedCodemod, ABC):
                     # TODO support for attname as well (i.e. my_foreign_field_id).
                     # Issue is if this is a required field, we can't make both required at the same time
                     attr_name = field.name
-                    annotation = self.django_context.get_model_name(
-                        # As per `ForwardManyToOneDescriptor.__set__`:
-                        field.remote_field.model._meta.concrete_model
-                    )
-                    annotation += " | Combinable"
+                    if isinstance(field.remote_field.model, str):
+                        # This seems to happen when a string reference can't be resolved
+                        # It should be invalid at runtime but let's not error here.
+                        annotation = "Any"
+                        self.add_typing_imports(["Any"])
+                    else:
+                        annotation = self.django_context.get_model_name(
+                            # As per `ForwardManyToOneDescriptor.__set__`:
+                            field.remote_field.model._meta.concrete_model
+                        )
+                        annotation += " | Combinable"
                 elif contenttypes_installed and isinstance(field, GenericForeignKey):
                     # it's generic, so cannot set specific model
                     attr_name = field.name
@@ -167,7 +175,7 @@ class ModelCreationBaseCodemod(StubVisitorBasedCodemod, ABC):
                         attr_name,
                         annotation=annotation,
                         docstring=getattr(field, "help_text", None) or None,
-                        required=not all_optional and not self.django_context.is_required_field(field),
+                        required=not all_optional and self.django_context.is_required_field(field),
                     )
                 )
 
