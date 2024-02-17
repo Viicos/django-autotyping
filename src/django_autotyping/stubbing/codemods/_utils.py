@@ -31,7 +31,7 @@ def get_kw_param(node: cst.FunctionDef, param_name: str) -> cst.Param:
     return next(param for param in node.params.kwonly_params if param.name.value == param_name)
 
 
-def to_pascal(string) -> str:
+def to_pascal(string: str) -> str:
     return re.sub("([0-9A-Za-z])_(?=[0-9A-Z])", lambda m: m.group(1), string.title())
 
 

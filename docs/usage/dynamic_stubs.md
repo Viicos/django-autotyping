@@ -17,6 +17,7 @@ The following is a list of the available rules related to dynamic stubs:
 - [`DJAS011`][django_autotyping.stubbing.codemods.auth_functions_codemod.AuthFunctionsCodemod]: Add a custom return type to the to auth related functions.
 - [`DJAS015`][django_autotyping.stubbing.codemods.reverse_overload_codemod.ReverseOverloadCodemod]: Add overloads to the [`reverse`][django.urls.reverse] function.
 - [`DJAS016`][django_autotyping.stubbing.codemods.settings_codemod.SettingCodemod]: Add typing to the Django settings object.
+- [`DJAS017`][django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod]: Add overloads for template loading functions.
 
 
 ## Type checker configuration

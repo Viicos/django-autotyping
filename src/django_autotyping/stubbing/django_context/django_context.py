@@ -6,6 +6,7 @@ from django.apps.registry import Apps
 from django.conf import LazySettings
 from django.core.management import get_commands
 from django.db.models import NOT_PROVIDED, DateField, Field
+from django.template import engines
 from django.urls import get_resolver
 from libcst.codemod.visitors import ImportItem
 
@@ -13,6 +14,7 @@ from django_autotyping.typing import ModelType
 
 from ..codemods._utils import to_pascal
 from ._management_utils import CommandInfo, get_commands_infos
+from ._template_utils import get_template_names
 from ._url_utils import PathInfo, get_paths_infos
 
 
@@ -58,6 +60,16 @@ class DjangoStubbingContext:
     @property
     def management_commands_info(self) -> dict[str, CommandInfo]:
         return get_commands_infos(get_commands())
+
+    @property
+    def template_engines_info(self) -> dict[str, dict]:
+        return {
+            engine_name: {
+                "backend_class": template["BACKEND"],
+                "template_names": get_template_names(engines[engine_name]),
+            }
+            for engine_name, template in engines.templates.items()
+        }
 
     def is_duplicate(self, model: ModelType) -> bool:
         """Whether the model has a duplicate name with another model in a different app."""
