@@ -29,6 +29,7 @@ testfiles_params = pytest.mark.parametrize(
         ("djas010.py", ["DJAS010"], StubsGenerationSettings()),
         ("djas011.py", ["DJAS011"], StubsGenerationSettings()),
         ("djas016.py", ["DJAS016"], StubsGenerationSettings()),
+        ("djas017.py", ["DJAS017"], StubsGenerationSettings()),
     ],
 )
 # fmt: on
