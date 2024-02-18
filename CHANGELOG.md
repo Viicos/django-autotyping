@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 (2024-02-18)
+
+This release brings basic support for template loading functions (e.g. `render_to_string`).
+
+- Fixed some typos in readme and docstrings (#50)
+- Fixes and tests for `DJAS002/3` (#53)
+- Add support for template loading functions (#56)
+- Remove outdated VSCode limitation in docs (#57)
+
 ## 0.4.0 (2024-02-04)
 
 This release brings improvements to the model creation related comemod:
