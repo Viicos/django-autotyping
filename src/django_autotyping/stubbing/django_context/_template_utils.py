@@ -3,7 +3,13 @@ from typing import Callable, TypedDict
 
 from django.template.backends.base import BaseEngine
 from django.template.backends.django import DjangoTemplates
-from django.template.backends.jinja2 import Jinja2
+
+try:
+    from django.template.backends.jinja2 import Jinja2
+
+    has_jinja2 = True
+except ImportError:
+    has_jinja2 = False
 
 
 class EngineInfo(TypedDict):
@@ -23,15 +29,19 @@ def _get_django_template_names(engine: DjangoTemplates) -> list[str]:
     return list(ordered_template_names)
 
 
-def _get_jinja2_template_names(engine: Jinja2) -> list[str]:
-    # TODO Make use of `BaseLoader.list_templates()`
-    return []
+if has_jinja2:
+
+    def _get_jinja2_template_names(engine: Jinja2) -> list[str]:
+        # TODO Make use of `BaseLoader.list_templates()`
+        return []
 
 
 ENGINE_HANDLERS: dict[type[BaseEngine], Callable[[BaseEngine], list[str]]] = {
     DjangoTemplates: _get_django_template_names,
-    Jinja2: _get_jinja2_template_names,
 }
+
+if has_jinja2:
+    ENGINE_HANDLERS[Jinja2] = _get_jinja2_template_names
 
 
 def get_template_names(engine: BaseEngine) -> list[str]:
