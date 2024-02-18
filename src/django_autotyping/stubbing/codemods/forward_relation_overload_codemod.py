@@ -60,11 +60,6 @@ class ForwardRelationOverloadCodemod(StubVisitorBasedCodemod):
     reveal_type(MyModel().nullable)  # Revealed type is "Other | None"
     ```
 
-    !!! info "Usage with VSCode"
-        Auto-completion might not always work as expected, see this
-        [issue](https://github.com/microsoft/pylance-release/issues/4428).
-
-
     ??? abstract "Implementation"
         The following is a snippet of the produced overloads:
 
