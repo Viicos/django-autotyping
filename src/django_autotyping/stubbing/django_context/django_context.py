@@ -14,7 +14,7 @@ from django_autotyping.typing import ModelType
 
 from ..codemods._utils import to_pascal
 from ._management_utils import CommandInfo, get_commands_infos
-from ._template_utils import get_template_names
+from ._template_utils import EngineInfo, get_template_names
 from ._url_utils import PathInfo, get_paths_infos
 
 
@@ -62,7 +62,7 @@ class DjangoStubbingContext:
         return get_commands_infos(get_commands())
 
     @property
-    def template_engines_info(self) -> dict[str, dict]:
+    def template_engines_info(self) -> dict[str, EngineInfo]:
         return {
             engine_name: {
                 "backend_class": template["BACKEND"],

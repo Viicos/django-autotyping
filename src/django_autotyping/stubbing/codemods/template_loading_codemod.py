@@ -6,7 +6,7 @@ from libcst.codemod import CodemodContext
 
 from django_autotyping.typing import FlattenFunctionDef
 
-from ._utils import get_param, to_pascal
+from ._utils import get_kw_param, get_param, to_pascal
 from .base import InsertAfterImportsVisitor, StubVisitorBasedCodemod
 from .constants import OVERLOAD_DECORATOR
 
@@ -46,6 +46,9 @@ class TemplateLoadingCodemod(StubVisitorBasedCodemod):
     get_template("a_django_template.html", using="django")
     get_template("not_a_jinja2_template.html", using="my_jinja2_engine")  # Type error
     ```
+
+    !!! warning "Limited support"
+        Engines other that Django and custom loaders are not supported yet.
     """
 
     STUB_FILES = {"template/loader.pyi"}
@@ -60,9 +63,9 @@ class TemplateLoadingCodemod(StubVisitorBasedCodemod):
 
         engines_literal_names: dict[str | _All, str] = {}
 
-        for engine_name, template_info in engines_info.items():
+        for engine_name, engine_info in engines_info.items():
             literal_name = f"{to_pascal(engine_name)}Templates"
-            literals = ", ".join(f'"{name}"' for name in template_info["template_names"])
+            literals = ", ".join(f'"{name}"' for name in engine_info["template_names"])
 
             InsertAfterImportsVisitor.insert_after_imports(
                 self.context, [cst.parse_statement(f"{literal_name}: TypeAlias = Literal[{literals}]")]
@@ -72,7 +75,7 @@ class TemplateLoadingCodemod(StubVisitorBasedCodemod):
 
         if len(engines_info) >= 2:  # noqa: PLR2004
             all_names: set[str] = set()
-            for engine_info in reversed(engines_info):
+            for engine_info in reversed(engines_info.values()):
                 all_names.update(engine_info["template_names"])
 
             # Ideally `AllTemplates` but 'all' might be an engine name already
@@ -89,9 +92,8 @@ class TemplateLoadingCodemod(StubVisitorBasedCodemod):
         return engines_literal_names
 
     @m.leave(GET_TEMPLATE_DEF_MATCHER | SELECT_TEMPLATE_DEF_MATCHER | RENDER_TO_STRING_DEF_MATCHER)
-    def mutate_GetTemplateFunctionDef(
-        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
-    ) -> FlattenFunctionDef:
+    def mutate_FunctionDef(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef) -> FlattenFunctionDef:
+        is_render_to_string = updated_node.name.value == "render_to_string"
         is_select_template = updated_node.name.value == "select_template"
         template_name_arg = "template_name_list" if is_select_template else "template_name"
 
@@ -128,13 +130,24 @@ class TemplateLoadingCodemod(StubVisitorBasedCodemod):
                     annotation=cst.Annotation(cst.Name("None")),
                 )
             else:
+                get_param_func = get_param
+                if is_render_to_string:
+                    # Make all params following 'template_name' kw-only:
+                    overload_ = overload_.with_deep_changes(
+                        old_node=overload_.params,
+                        star_arg=cst.ParamStar(),
+                        params=[get_param(overload_, "template_name")],
+                        kwonly_params=[p for p in overload_.params.params if p.name.value != "template_name"],
+                    )
+                    get_param_func = get_kw_param
+
                 overload_ = overload_.with_deep_changes(
-                    old_node=get_param(overload_, "using"),
+                    old_node=get_param_func(overload_, "using"),
                     annotation=cst.Annotation(cst.parse_expression(f'Literal["{engine_name}"]')),
                     default=None,
                     equal=cst.MaybeSentinel.DEFAULT,
                 )
 
-            overloads.append(overload)
+            overloads.append(overload_)
 
         return cst.FlattenSentinel(overloads)

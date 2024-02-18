@@ -49,16 +49,17 @@ ROOT_URLCONF = "stubstestproj.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "NAME": "django_app_dirs",
         "DIRS": [],
         "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
+        "OPTIONS": {},
+    },
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "NAME": "django_dir",
+        "DIRS": [Path(__file__).parent / "customtemplatesdir"],
+        "APP_DIRS": False,
+        "OPTIONS": {},
     },
 ]
 

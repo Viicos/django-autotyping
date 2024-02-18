@@ -1,9 +1,14 @@
 from pathlib import Path
-from typing import Callable
+from typing import Callable, TypedDict
 
 from django.template.backends.base import BaseEngine
 from django.template.backends.django import DjangoTemplates
 from django.template.backends.jinja2 import Jinja2
+
+
+class EngineInfo(TypedDict):
+    backend_class: str
+    template_names: list[str]
 
 
 def _get_django_template_names(engine: DjangoTemplates) -> list[str]:
