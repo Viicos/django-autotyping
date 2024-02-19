@@ -5,7 +5,7 @@ from typing import Any
 
 from django.apps import apps
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandParser
+from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from django_autotyping._compat import Unpack
 from django_autotyping.app_settings import AutotypingSettings
@@ -45,8 +45,17 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Unpack[CommandOptions]) -> None:
-        create_local_django_stubs(options["local_stubs_dir"], stubs_settings.SOURCE_STUBS_DIR)
+        if not (stubs_dir := options["local_stubs_dir"]).is_dir():
+            raise CommandError(f"The local stubs directory {stubs_dir} does not exist or is not a directory")
+
+        if not (stubs_dir / "django-stubs").is_dir():
+            self.stdout.write("Copying the 'django-stubs' package from site packages to the local stubs directory")
+            create_local_django_stubs(options["local_stubs_dir"], stubs_settings.SOURCE_STUBS_DIR)
         codemods = gather_codemods(options["ignore"])
 
         django_context = DjangoStubbingContext(apps, settings)
-        run_codemods(codemods, django_context, stubs_settings)
+        results = run_codemods(codemods, django_context, stubs_settings)
+        for stub_file, content in results.items():
+            self.stdout.write(f"Writing contents to {stub_file}")
+            target_file = options["local_stubs_dir"] / "django-stubs" / stub_file
+            target_file.write_text(content, encoding="utf-8")
