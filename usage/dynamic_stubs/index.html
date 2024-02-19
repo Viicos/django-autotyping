@@ -930,6 +930,7 @@
 <li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.auth_functions_codemod.AuthFunctionsCodemod"><code>DJAS011</code></a>: Add a custom return type to the to auth related functions.</li>
 <li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.reverse_overload_codemod.ReverseOverloadCodemod"><code>DJAS015</code></a>: Add overloads to the <a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/ref/urlresolvers/#django.urls.reverse"><code>reverse</code></a> function.</li>
 <li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.settings_codemod.SettingCodemod"><code>DJAS016</code></a>: Add typing to the Django settings object.</li>
+<li><a class="autorefs autorefs-internal" href="../../api/dynamic_stubs/rules/#django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod"><code>DJAS017</code></a>: Add overloads for template loading functions.</li>
 </ul>
 <h2 id="type-checker-configuration">Type checker configuration<a class="headerlink" href="#type-checker-configuration" title="Permanent link">&para;</a></h2>
 <p>Before making use of this feature, you must configure your type checker to discover your custom stubs:</p>
@@ -1017,7 +1018,7 @@ to the first entry in site packages.</p>
   <div class="doc doc-contents ">
   
       <p>Whether string references in the form of <code>{model_name}</code> should be generated in overloads.</p>
-<p>If set to <code>True</code>, both <code>{model_name}</code> and <code>{model_name}.{app_label}</code> are allowed
+<p>If set to <code>True</code>, both <code>{model_name}</code> and <code>{app_label}.{model_name}</code> are allowed
 (unless the model name has a duplicate in a different app).</p>
 <p>Affected rules: <code>DJAS001</code>.</p>
   </div>

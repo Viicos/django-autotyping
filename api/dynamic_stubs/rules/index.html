@@ -710,6 +710,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod" class="md-nav__link">
+    <span class="md-ellipsis">
+      TemplateLoadingCodemod
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TemplateLoadingCodemod">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod.STUB_FILES" class="md-nav__link">
+    <span class="md-ellipsis">
+      STUB_FILES
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1042,6 +1066,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod" class="md-nav__link">
+    <span class="md-ellipsis">
+      TemplateLoadingCodemod
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TemplateLoadingCodemod">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod.STUB_FILES" class="md-nav__link">
+    <span class="md-ellipsis">
+      STUB_FILES
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1108,11 +1156,6 @@ from a model instance.</p>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">MyModel</span><span class="p">()</span><span class="o">.</span><span class="n">field</span><span class="p">)</span>  <span class="c1"># Revealed type is &quot;Other&quot;</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">MyModel</span><span class="p">()</span><span class="o">.</span><span class="n">nullable</span><span class="p">)</span>  <span class="c1"># Revealed type is &quot;Other | None&quot;</span>
 </span></code></pre></div>
-<div class="admonition info">
-<p class="admonition-title">Usage with VSCode</p>
-<p>Auto-completion might not always work as expected, see this
-<a href="https://github.com/microsoft/pylance-release/issues/4428">issue</a>.</p>
-</div>
 <details class="abstract">
 <summary>Implementation</summary>
 <p>The following is a snippet of the produced overloads:</p>
@@ -1538,6 +1581,75 @@ the reflected type hint will be <code>int | None</code>).</p>
           <code class="highlight language-python"><span class="n">STUB_FILES</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;conf/__init__.pyi&#39;</span><span class="p">}</span></code>
 
 <a href="#django_autotyping.stubbing.codemods.settings_codemod.SettingCodemod.STUB_FILES" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  </div>
+
+</div>
+
+
+
+
+
+  </div>
+
+  </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod" class="doc doc-heading">
+          <code>TemplateLoadingCodemod</code>
+
+
+<a href="#django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+
+  
+      <p>A codemod that will add overloads for template loading functions:</p>
+<ul>
+<li><a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/topics/templates/#django.template.loader.get_template"><code>get_template</code></a></li>
+<li><a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/topics/templates/#django.template.loader.select_template"><code>select_template</code></a></li>
+<li><a class="autorefs autorefs-external" href="https://docs.djangoproject.com/en/dev/topics/templates/#django.template.loader.render_to_string"><code>render_to_string</code></a></li>
+</ul>
+<p>Rule identifier: <code>DJAS017</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">django.template.loader</span> <span class="kn">import</span> <span class="n">get_template</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;a_template.html&quot;</span><span class="p">)</span>  <span class="c1"># &#39;a_template.html&#39; can be from any engine</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;a_django_template.html&quot;</span><span class="p">,</span> <span class="n">using</span><span class="o">=</span><span class="s2">&quot;django&quot;</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;not_a_jinja2_template.html&quot;</span><span class="p">,</span> <span class="n">using</span><span class="o">=</span><span class="s2">&quot;my_jinja2_engine&quot;</span><span class="p">)</span>  <span class="c1"># Type error</span>
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Limited support</p>
+<p>Engines other that Django and custom loaders are not supported yet.</p>
+</div>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod.STUB_FILES" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">STUB_FILES</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;template/loader.pyi&#39;</span><span class="p">}</span></code>
+
+<a href="#django_autotyping.stubbing.codemods.template_loading_codemod.TemplateLoadingCodemod.STUB_FILES" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
   <div class="doc doc-contents ">
