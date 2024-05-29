@@ -1,6 +1,5 @@
 # Test with `MODEL_FIELDS_OPTIONAL=True` (the default).
 
-
 from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID
@@ -11,6 +10,7 @@ from stubstestproj.firstapp.models import (
     AltNameModel,
     CharFieldsModel,
     DateFieldsModel,
+    DateTimeFieldsModel,
     ForeignKeyModel,
     ModelOne,
 )
@@ -31,6 +31,12 @@ DateFieldsModel.objects.create(date_field="")
 DateFieldsModel(date_field=date.today())
 DateFieldsModel.objects.create(date_field=date.today())
 
+DateTimeFieldsModel(datetime_field="")
+DateTimeFieldsModel.objects.create(datetime_field="")
+DateTimeFieldsModel(datetime_field=datetime.now())
+DateTimeFieldsModel.objects.create(datetime_field=datetime.now())
+DateTimeFieldsModel(datetime_field=date.today())
+DateTimeFieldsModel.objects.create(datetime_field=date.today())
 
 AllFieldsModel(integer_field=1)
 AllFieldsModel.objects.create(integer_field=1)
