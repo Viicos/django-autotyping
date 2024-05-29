@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "stubstestproj.accounts",
     "stubstestproj.firstapp",
     "stubstestproj.secondapp",
+    "stubstestproj.appwithoutmodelsmodule",
 ]
 
 MIDDLEWARE = [

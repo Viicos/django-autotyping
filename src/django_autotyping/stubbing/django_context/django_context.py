@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import inspect
 from collections import defaultdict
+from types import ModuleType
 
 from django.apps.registry import Apps
 from django.conf import LazySettings
@@ -25,11 +27,25 @@ class DjangoStubbingContext:
 
     @staticmethod
     def _get_model_alias(model: ModelType) -> str:
-        """Return an alias of the model, by converting the app label to PascalCase and joining
+        """Return an alias of the model.
+
+        The alias is constructed by converting the app label to PascalCase and joining
         the app label to the model name.
         """
         app_label = to_pascal(model._meta.app_label)
         return f"{app_label}{model.__name__}"
+
+    @staticmethod
+    def _get_model_module(model: ModelType) -> ModuleType:
+        """Return the module object where the model class is exported or defined.
+
+        Use the models module of the app where the model is defined, and fallback
+        to the actual module of the model class in case the model is not exported
+        or present in the models module.
+        """
+        if model._meta.app_config.models_module is not None:
+            return model._meta.app_config.models_module
+        return inspect.getmodule(model)  # type: ignore
 
     @property
     def models(self) -> list[ModelType]:
@@ -45,7 +61,7 @@ class DjangoStubbingContext:
 
         return [
             ImportItem(
-                module_name=model._meta.app_config.models_module.__name__,
+                module_name=self._get_model_module(model).__name__,
                 obj_name=model.__name__,
                 alias=self._get_model_alias(model) if self.is_duplicate(model) else None,
             )
