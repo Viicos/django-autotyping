@@ -32,20 +32,22 @@ class DuplicateModel(models.Model):
 
 
 class CharFieldsModel(models.Model):
-
     char_field = models.CharField()
     char_field_blank = models.CharField(blank=True)
     char_field_null = models.CharField(null=True)
     char_field_default = models.CharField(default="")
 
 class DateFieldsModel(models.Model):
-
     date_field = models.DateField()
     date_field_auto_now = models.DateField(auto_now=True)
     date_field_auto_now_add = models.DateField(auto_now_add=True)
 
-class AllFieldsModel(models.Model):
+class DateTimeFieldsModel(models.Model):
+    datetime_field = models.DateTimeField()
+    datetime_field_auto_now = models.DateTimeField(auto_now=True)
+    datetime_field_auto_now_add = models.DateTimeField(auto_now_add=True)
 
+class AllFieldsModel(models.Model):
     integer_field = models.IntegerField()
     float_field = models.FloatField()
     decimal_field = models.DecimalField()
@@ -57,7 +59,6 @@ class AllFieldsModel(models.Model):
     uuid_field = models.UUIDField()
 
 class ForeignKeyModel(models.Model):
-
     model_one = models.ForeignKey("firstapp.ModelOne", on_delete=models.CASCADE)
     model_one_null = models.ForeignKey("firstapp.ModelOne", on_delete=models.CASCADE, null=True)
 

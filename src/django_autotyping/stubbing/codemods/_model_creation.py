@@ -69,7 +69,7 @@ FIELD_SET_TYPES_MAP: dict[type[Field], FieldType] = {
     # For datetime related fields, we use `datetime.x` because `datetime`
     # is already imported in `db/models/manager.pyi`:
     DateTimeField: {
-        "type": "str | datetime.datetime | datetime.Date | Combinable",
+        "type": "str | datetime.datetime | datetime.date | Combinable",
         "extra_imports": [ImportItem("datetime")],
     },
     DateField: {
