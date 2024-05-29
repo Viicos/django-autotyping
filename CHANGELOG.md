@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 (2024-05-29)
+
+This release fixes two bugs:
+
+- Fallback to `inspect.getmodule` for models not exported in the app's models module (#66)
+- Fix type representation of `DateTimeField.__set__` types (#67)
+
 ## 0.5.0 (2024-02-18)
 
 This release brings basic support for template loading functions (e.g. `render_to_string`).
